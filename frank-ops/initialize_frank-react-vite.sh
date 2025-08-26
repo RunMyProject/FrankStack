@@ -103,4 +103,3 @@ EOL
 npm run dev
 
 echo "Setup FrankStack completato. Visita http://localhost:5173/"
-
