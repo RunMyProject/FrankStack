@@ -1,3 +1,14 @@
+# .gitignore
+# -----------------------
+# Specifies intentionally untracked files to ignore for Git.
+# - Logs
+# - Node modules and build output
+# - Local environment files
+# - Editor and OS-specific files
+# 
+# Author: Edoardo Sabatini
+# Date: 28 August 2025
+
 # Logs
 logs
 *.log
@@ -7,6 +18,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Node modules and build output
 node_modules
 dist
 dist-ssr
@@ -16,7 +28,11 @@ dist-ssr
 .vscode/*
 !.vscode/extensions.json
 .idea
+
+# OS-specific files
 .DS_Store
+
+# Visual Studio / project files
 *.suo
 *.ntvs*
 *.njsproj

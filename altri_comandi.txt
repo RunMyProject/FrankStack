@@ -1,5 +1,0 @@
-cd /media/edoardo/data2
-sudo chmod -R 777 ollama_models
-tar -czvf ollama_models.tar.gz ollama_models
-history -c && history -w
-

@@ -1,3 +1,21 @@
+/**
+ * index.css
+ * Tailwind CSS Entry Point
+ * -----------------------
+ * Imports Tailwind directives for:
+ * - base styles
+ * - components
+ * - utilities
+ * 
+ * Author: Edoardo Sabatini
+ * Date: 28 August 2025
+ */
+
+/* Tailwind base styles */
 @tailwind base;
+
+/* Tailwind component styles */
 @tailwind components;
+
+/* Tailwind utility classes */
 @tailwind utilities;

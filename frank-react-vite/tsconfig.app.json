@@ -1,10 +1,35 @@
 {
+  /*
+   * tsconfig.app.json
+   * TypeScript Configuration for App
+   * -----------------------
+   * Configures TypeScript compiler options for the project.
+   * - Target ES2022 with DOM support
+   * - React JSX support
+   * - Strict linting rules
+   * - Bundler-friendly module resolution
+   * 
+   * Author: Edoardo Sabatini
+   * Date: 28 August 2025
+   */
+
   "compilerOptions": {
+    // Build info file to speed up incremental builds
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    
+    // ECMAScript target
     "target": "ES2022",
+    
+    // Class field emit behavior
     "useDefineForClassFields": true,
+    
+    // Libraries included
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    
+    // Module system
     "module": "ESNext",
+    
+    // Skip type checking of declaration files
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -15,7 +40,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* Linting & strictness */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -23,5 +48,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
+
+  // Files and folders to include
   "include": ["src"]
 }

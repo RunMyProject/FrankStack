@@ -1,14 +1,26 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# initialize_frank-react-zustand.sh
+# -----------------------
+# Script to initialize Zustand state management in FrankStack React project.
+# Provides a simple demo login system:
+# - Install Zustand
+# - Create store directory and store file
+# - Implement login/logout demo in Home.tsx using Zustand store
+#
+# Author: Edoardo Sabatini
+# Date: 28 August 2025
+# -----------------------------------------------------------------------------
 
-echo "🚀 Inizio setup Zustand + demo login"
+echo "🚀 Starting Zustand setup + demo login"
 
-# 1. Installazione Zustand
+# 1. Install Zustand
 npm install zustand
 
-# 2. Creazione cartella store
+# 2. Create store folder
 mkdir -p src/store
 
-# 3. Creazione useAuthStore.ts
+# 3. Create useAuthStore.ts
 cat > src/store/useAuthStore.ts <<EOL
 import { create } from 'zustand'
 
@@ -26,16 +38,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (username === "Edoardo" && password === "12345") {
       set({ user: username, isAuthenticated: true })
     } else {
-      alert("Credenziali non valide")
+      alert("Invalid credentials")
     }
   },
   logout: () => set({ user: null, isAuthenticated: false })
 }))
 EOL
 
-echo "✅ Zustand store creato in src/store/useAuthStore.ts"
+echo "✅ Zustand store created in src/store/useAuthStore.ts"
 
-# 4. Sovrascrittura Home.tsx per usare lo store
+# 4. Overwrite Home.tsx to use Zustand store
 cat > src/pages/Home.tsx <<EOL
 import { useAuthStore } from '../store/useAuthStore'
 import Button from '../components/Button'
@@ -54,7 +66,7 @@ export default function Home() {
         </>
       ) : (
         <>
-          <h1 className="text-2xl text-green-600 mt-4">Ciao {user}!</h1>
+          <h1 className="text-2xl text-green-600 mt-4">Hello {user}!</h1>
           <Button onClick={logout}>Logout</Button>
         </>
       )}
@@ -63,5 +75,4 @@ export default function Home() {
 }
 EOL
 
-echo "✅ Home.tsx aggiornata per usare Zustand store"
-
+echo "✅ Home.tsx updated to use Zustand store"

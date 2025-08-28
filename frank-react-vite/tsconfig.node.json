@@ -1,9 +1,30 @@
 {
+  /*
+   * tsconfig.node.json
+   * TypeScript Configuration for Node
+   * -----------------------
+   * Configures TypeScript compiler options for Node-specific scripts.
+   * - Target ES2023
+   * - Bundler-friendly module resolution
+   * - Strict linting rules
+   * - Includes only vite.config.ts
+   * 
+   * Author: Edoardo Sabatini
+   * Date: 28 August 2025
+   */
+
   "compilerOptions": {
+    // Build info file to speed up incremental builds
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    
+    // ECMAScript target and libraries
     "target": "ES2023",
     "lib": ["ES2023"],
+    
+    // Module system
     "module": "ESNext",
+    
+    // Skip type checking of declaration files
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -13,7 +34,7 @@
     "moduleDetection": "force",
     "noEmit": true,
 
-    /* Linting */
+    /* Linting & strictness */
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -21,5 +42,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
+
+  // Files and folders to include
   "include": ["vite.config.ts"]
 }

@@ -1,0 +1,25 @@
+/**
+ * miscellaneous.txt
+ * Miscellaneous DevOps / Local AI Setup Commands
+ * -----------------------
+ * Contains terminal commands for managing Ollama AI models locally.
+ * Features:
+ * - Sets permissions for local AI models
+ * - Creates a compressed archive of models
+ * - Clears terminal history for privacy / cleanup
+ *
+ * Author: Edoardo Sabatini
+ * Date: 28 August 2025
+ */
+
+# Navigate to local media directory
+cd /media/edoardo/data2
+
+# Set full read/write/execute permissions recursively on Ollama models folder
+sudo chmod -R 777 ollama_models
+
+# Compress the Ollama models folder into a tar.gz archive
+tar -czvf ollama_models.tar.gz ollama_models
+
+# Clear the terminal history for privacy and immediate cleanup
+history -c && history -w

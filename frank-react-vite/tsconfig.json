@@ -1,4 +1,17 @@
 {
+  /*
+   * tsconfig.json
+   * TypeScript Project References
+   * -----------------------
+   * Root TypeScript configuration that references app and node configs.
+   * - Does not include files directly
+   * - References tsconfig.app.json for frontend
+   * - References tsconfig.node.json for backend/Node scripts
+   * 
+   * Author: Edoardo Sabatini
+   * Date: 28 August 2025
+   */
+
   "files": [],
   "references": [
     { "path": "./tsconfig.app.json" },

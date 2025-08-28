@@ -1,20 +1,26 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# startaws.sh
+# -----------------------
+# Script to start LocalStack in the background
+# Stops and removes existing container if present, then launches a new one.
+#
+# Author: Edoardo Sabatini
+# Date: 28 August 2025
+# -----------------------------------------------------------------------------
 
-# Script per avviare LocalStack in background
-
-# Se esiste già un container con nome localstack, lo rimuove
+# Check if a container named 'localstack' already exists
 if [ "$(docker ps -a -q -f name=localstack)" ]; then
-  echo "⚠️  Container 'localstack' già esistente. Lo rimuovo..."
+  echo "⚠️  Container 'localstack' already exists. Removing..."
   docker stop localstack
   docker rm -f localstack
 fi
 
-# Avvio un nuovo container LocalStack
+# Start a new LocalStack container in detached mode
 docker run -d \
   -p 4566:4566 \
   -p 4510-4559:4510-4559 \
   --name localstack \
   localstack/localstack
 
-echo "✅ LocalStack avviato in background sulla porta 4566"
-
+echo "✅ LocalStack started in background on port 4566"

@@ -1,13 +1,36 @@
+<!--
+  index.html
+  Main HTML Template
+  -----------------------
+  Entry point for the React + TypeScript + Vite application.
+  - Sets up root div for React mounting
+  - Includes meta tags for charset and responsive viewport
+  - Loads main.tsx as a module
+  - Sets favicon
+  Author: Edoardo Sabatini
+  Date: 28 August 2025
+-->
+
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- Document character encoding -->
     <meta charset="UTF-8" />
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    
+    <!-- Responsive viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    
+    <!-- Page title -->
     <title>Vite + React + TS</title>
   </head>
   <body>
+    <!-- Root div for React application -->
     <div id="root"></div>
+
+    <!-- Main React entry point -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,14 +1,24 @@
 #!/bin/bash
+# -----------------------------------------------------------------------------
+# stopaws.sh
+# -----------------------
+# Script to stop and remove the LocalStack container.
+# Checks if LocalStack is running, stops it, and removes the container.
+# -----------------------------------------------------------------------------
+# Author: Edoardo Sabatini
+# Date: 28 August 2025
+# -----------------------------------------------------------------------------
 
-# Script per stoppare e pulire LocalStack
+# Stop LocalStack if running
 if [ "$(docker ps -q -f name=localstack)" ]; then
-  echo "🛑 Fermando LocalStack..."
+  echo "🛑 Stopping LocalStack..."
   docker stop localstack
 fi
 
+# Remove LocalStack container if exists
 if [ "$(docker ps -a -q -f name=localstack)" ]; then
-  echo "🧹 Rimuovendo container LocalStack..."
+  echo "🧹 Removing LocalStack container..."
   docker rm localstack
 fi
 
-echo "✅ LocalStack stoppato e pulito"
+echo "✅ LocalStack stopped and cleaned"
