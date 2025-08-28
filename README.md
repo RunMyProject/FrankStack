@@ -1,5 +1,7 @@
 # FrankStack
 
+*Updated August 28, 2025*
+
 ## Welcome
 
 **FrankStack** takes inspiration from *Frankenstein*: the monster built from multiple parts becomes a metaphor for a **fullstack project** that integrates all layers of development, from front-end to DevOps. The name also symbolizes the ambition of the project: creating an **end-to-end AI travel agent**, complete, modular, and orchestrated, like a multi-component robot that simulates a real travel booking cycle.
@@ -14,7 +16,7 @@ The integrated AI assistant is called:
 
 It can answer questions, guide the user, and interact with simulated booking systems.
 
-User session data (e.g., current chat, user name, API key) is stored in memory using **Zustand**, similar to Redux, allowing persistent state across components during a session.
+User session data (chat history, user name, API key) is stored in memory using **Zustand**, allowing persistent state across components during a session.
 
 ---
 
@@ -26,16 +28,15 @@ The challenging goal is to create an **AI travel agent** that:
 * Interacts with backend services on **AWS Cloud**
 * Covers all layers of the stack: React front-end, Spring Boot API, AI, orchestration
 
-Demonstrates an end-to-end demo:
-The **Scrum methodology** is applied with **unit sprints** and **code review sprints**, **Sprint Planning**, simulated team management, task assignment, simulation of a standard workday, etc.
+### Our Mission:
 
-**Final test example** (user interacts with AI):
+We want the AI to organize a travel experience like:
 
 > Organize and book a full travel experience for 2 people to Paris to visit the Eiffel Tower, duration 4 days, maximum budget 1500€, 3-star hotel, departing from Milan starting tomorrow, weather permitting, 1 suitcase, and airport-to-hotel shuttle/taxi included.
 
-The AI will analyze the request and return a structured JSON ready for API booking calls.
+The AI will analyze the request and return a structured JSON | YAML ready for API booking calls.
 
-> **Note:** The project is still in progress and not yet finished.
+> **Note:** the project is still in progress and not yet finished.
 
 ---
 
@@ -45,7 +46,7 @@ The AI will analyze the request and return a structured JSON ready for API booki
 
 * 📁 **components/** – all React components (Header, InputBar, MessageList, MessageBubble, DebugPanel, Button)
 * 📁 **hooks/** – custom hooks (`useWeather`, `useServerHealth`, `useAI`)
-* 📁 **pages/** – main pages (Chat.tsx, Home.tsx)
+* 📁 **pages/** – main pages (`Chat.tsx`, `Home.tsx`)
 * 📁 **store/** – **Zustand store** (`useAuthStore.ts`) for user session management
 * 📁 **types/** – shared TypeScript types (`chat.ts`)
 * 📁 **utils/** – utility functions (`contextBuilder.ts`, `datetime.ts`, `weatherCodes.ts`)
@@ -57,8 +58,6 @@ The AI will analyze the request and return a structured JSON ready for API booki
 
 ## Pipeline Overview
 
-Here’s a small **schematic of the flow**:
-
 ```text
 [React Front-End (Vite)] 
       │
@@ -66,13 +65,13 @@ Here’s a small **schematic of the flow**:
 [Zustand Store: user session, API key, chat state]
       │
       ▼
-[Spring Boot API] <─┐
-      │            │
-      ▼            │
-[Ollama AI GPT-OSS 20B] 
-      │
-      ▼
-[Saga Pattern / Choreography of API Calls]
+[Spring Boot API / Node Server] <─┐
+      │                          │
+      ▼                          │
+[Ollama AI GPT-OSS 20B]           │
+      │                          │
+      ▼                          │
+[Saga Pattern / Choreography of API Calls] 
       │
       ▼
 [AWS Cloud Services / Orchestration]
@@ -84,7 +83,7 @@ Here’s a small **schematic of the flow**:
 * Front-end sends requests via React UI
 * **Zustand store** keeps track of the user session and chat state
 * API handles communication with AI and cloud services
-* AI interprets user input and returns structured JSON
+* AI interprets user input and returns structured JSON | YAML
 * Saga pattern executes chained booking actions
 * AWS orchestrates services ensuring end-to-end flow
 
@@ -117,15 +116,39 @@ Here’s a small **schematic of the flow**:
 
 ---
 
-## Getting Started
+## Getting Started (3 Terminals)
+
+FrankStack covers **the full stack**: Front-end, Back-end, AI + Orchestration.
+To run correctly, **use three separate terminals**.
+
+---
+
+### 1️⃣ Front-End (React / Vite)
 
 ```bash
-git clone https://github.com/RunMyProject/FrankStack.git
-cd FrankStack/frank-react-vite
-./start.sh
+cd ~/Java/FrankStack/frank-react-vite
+./start.sh  # installs dependencies and runs the front-end at http://localhost:5173
 ```
 
-Open your browser at `http://localhost:5173` to see the chat in action.
+### 2️⃣ Back-End (Node / Spring Boot API)
+
+```bash
+cd ~/Java/FrankStack/frank-node-server
+npm install      # install all dependencies
+node server.js   # start the Node server
+```
+
+⚠️ Make sure Ollama is available before starting the server, otherwise AI calls will fail.
+
+### 3️⃣ DevOps / AI (Ollama + LocalStack)
+
+```bash
+cd ~/Java/FrankStack/frank-ops
+./startaws.sh     # start LocalStack
+./startollama.sh  # start Ollama container with models
+```
+
+> This terminal handles external services: Ollama for AI and LocalStack to simulate AWS.
 
 ---
 
@@ -133,16 +156,16 @@ Open your browser at `http://localhost:5173` to see the chat in action.
 
 * **Front-end:** React + TypeScript + TailwindCSS + **Vite**
 * **State management:** **Zustand** (user session)
-* **AI:** Ollama with GPT-OSS 20B model
-* **Back-end:** Spring Boot API orchestrated on AWS
-* **DevOps:** cloud orchestration, full end-to-end API call management (**pipeline**)
+* **AI:** Ollama with GPT-OSS 20B
+* **Back-end:** Spring Boot API / Node server orchestrated on AWS
+* **DevOps:** cloud orchestration, end-to-end API call management
 * **Debug & Logs:** real-time debug panel
 
 ---
 
 ## Contribution
 
-The project is an end-to-end demo to test **fullstack AI orchestration**. Each part of the stack is observable and editable, using **Scrum methodology**, showcasing modern development practices.
+FrankStack is an end-to-end demo of **fullstack AI orchestration**.
+Every part of the stack is observable and editable, using **Scrum methodology**, showcasing modern development practices.
 
 ---
-
