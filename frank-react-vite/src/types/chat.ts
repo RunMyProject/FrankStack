@@ -7,7 +7,7 @@
  * - Defines message structure, weather data, and AI request/response payloads
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 29 August 2025
  */
 
 /**
@@ -26,13 +26,12 @@ export type Lang = 'IT' | 'EN';
 export type ServerStatus = 'connecting' | 'online' | 'offline';
 
 /**
- * Represents a single chat message
+ * Location information structure
  */
-export interface ChatMessage {
-  id: string;           // Unique message identifier
-  type: 'user' | 'ai';  // Message sender type
-  content: string;      // Message content
-  timestamp: Date;      // Message timestamp
+export interface LocationData {
+  city: string;   // City name resolved from coordinates
+  lat: number;    // Latitude in decimal degrees
+  lon: number;    // Longitude in decimal degrees
 }
 
 /**
@@ -42,6 +41,16 @@ export interface WeatherData {
   icon: string;   // Weather icon code
   desc: string;   // Weather description
   temp: number;   // Temperature in Celsius
+}
+
+/**
+ * Represents a single chat message
+ */
+export interface ChatMessage {
+  id: string;           // Unique message identifier
+  type: 'user' | 'ai';  // Message sender type
+  content: string;      // Message content
+  timestamp: Date;      // Message timestamp
 }
 
 /**

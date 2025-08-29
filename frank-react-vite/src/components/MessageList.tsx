@@ -2,40 +2,42 @@
  * MessageList.tsx
  * Chat Message List Component
  * ---------------------------
- * Displays the list of chat messages in the conversation.
- * - Renders user and AI messages using MessageBubble
- * - Shows a loading indicator when AI is processing
- * - Scrolls to the latest message if messagesEndRef is provided
- * 
+ * Responsible for rendering the conversation messages.
+ * - Displays both user and AI messages via MessageBubble
+ * - Shows a loading indicator when the AI is processing
+ * - Auto-scrolls to the latest message if a ref is provided
+ *
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 29 August 2025
  */
 
 import React from 'react';
-import type { ChatMessage, Lang } from '../types/chat';
+import type { ChatMessage } from '../types/chat';
 import MessageBubble from './MessageBubble';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface MessageListProps {
-  messages: ChatMessage[];                       // Array of chat messages
-  isLoading: boolean;                             // Loading state for AI response
-  currentLang: Lang;                              // Current language for labels
-  messagesEndRef?: React.RefObject<HTMLDivElement>; // Ref to scroll to latest message
+  messages: ChatMessage[];                         // List of chat messages
+  isLoading: boolean;                              // Indicates if AI is generating a response
+  messagesEndRef?: React.RefObject<HTMLDivElement>; // Ref used to scroll to the last message
 }
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   isLoading,
-  currentLang,
-  messagesEndRef
+  messagesEndRef,
 }) => {
+  const { aiContext } = useAuthStore();
+  const currentLang = aiContext.lang; // Current interface language
+
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">
-      {/* Render all chat messages */}
+      {/* Render chat messages */}
       {messages.map((msg) => (
         <MessageBubble key={msg.id} message={msg} isUser={msg.type === 'user'} />
       ))}
 
-      {/* Loading indicator when AI is processing */}
+      {/* AI loading indicator */}
       {isLoading && (
         <div className="flex items-center space-x-2 p-2 animate-fadeIn">
           <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -56,7 +58,7 @@ const MessageList: React.FC<MessageListProps> = ({
         </div>
       )}
 
-      {/* Invisible div to scroll into view */}
+      {/* Anchor for automatic scroll-to-bottom */}
       <div ref={messagesEndRef} />
     </div>
   );

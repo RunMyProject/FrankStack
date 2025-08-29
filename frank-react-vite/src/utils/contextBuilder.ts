@@ -2,33 +2,53 @@
  * contextBuilder.ts
  * AI Context Builder
  * -----------------------
- * Utility function to construct a context string for AI requests.
- * - Includes max words, date/time, AI name, location, weather, and user information
+ * Utility function to construct a structured JSON context for AI requests.
+ * - Includes max words, date/time, AI name, location, weather, and user info
  * - Designed to be prepended to user messages before sending to the AI
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Last Update: 29 August 2025
  */
 
 import { formatDateTime } from './datetime';
-import type { WeatherData } from '../types/chat';
+import { useAuthStore } from '../store/useAuthStore';
 
-/**
- * Constructs the AI context string.
- * @param maxWords Maximum number of words allowed for AI response
- * @param aiName Name of the AI assistant
- * @param locationName Name of the user's location
- * @param weather Current weather data
- * @param userName Name of the user
- * @returns Formatted context string for AI
- */
-export const buildAIContext = (
-  maxWords: number,
-  aiName: string,
-  locationName: string,
-  weather: WeatherData,
-  userName: string
-): string => {
+export const buildAIContext = (aiName: string, userMessage: string): string => {
+  const { aiContext, user } = useAuthStore.getState();
+
+  const maxWords = aiContext?.maxWords || 300;
+  const userName = user || 'Unknown';
+  const lang = aiContext?.lang || 'EN';
+  const cityStart = aiContext?.locationData?.city || 'Unknown';
+  const weatherDesc = aiContext?.weatherData?.desc || 'N/A';
+  const weatherTemp = aiContext?.weatherData?.temp ?? 0;
   const dateTime = formatDateTime(new Date());
-  return `Max words: ${maxWords} | ${dateTime} | AI Name: ${aiName} | ${locationName} - ${weather.desc} - ${weather.temp}°C | User: ${userName}\n\n`;
+
+  return JSON.stringify({
+    maxWords,
+    user: userName,
+    userLang: lang,
+    aiName,
+    cityStart,
+    cityEnd: "?",
+    kindOfTravel: "?",
+    maxBudget: "?",
+    numberOfPeople: "?",
+    starsOfHotel: "?",
+    durationInDays: "?",
+    dateTimeStart: "?",
+    dateTimeEnd: "?",
+    numberOfLuggage: "?",
+    currentDateTime: dateTime,
+    weather: weatherDesc,
+    temperature: weatherTemp,
+    userMessage,
+    answer: "*",
+    rules: [
+      "If some required fields are missing, include them in 'missingFields': [ ... ] and set 'answer' to a natural message asking for missing info.",
+      "If all fields are present, set 'answer' to 'ok' (or another short confirmation).",
+      "Numbers must be numbers, strings must be strings, dates in ISO format.",
+      "Return only JSON, no extra explanations or comments."
+    ]
+  });
 };

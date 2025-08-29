@@ -1,6 +1,33 @@
 # FrankStack
 
-*Updated August 28, 2025*
+*Updated: 29 August 2025*
+
+---
+
+## 🎉 Today's Progress (short)
+
+We made focused progress today:
+
+- Automatic browser-based location detection (GPS).
+- Weather integration tied to detected location.
+- Session persistence with **Zustand** (stores user session + AI context).
+- Built and tested a structured JSON model for AI interactions; parsing pipeline validated.
+- Many iterative tests and fixes on the AI prompt / response flow.
+
+---
+
+## 📸 Screenshots & Demo (first impression)
+
+Take a quick look at the AI in action. Edoardo asks the assistant for a trip to Paris — question on the left, AI answer on the right.
+
+| Question | Answer |
+|----------|--------|
+| ![Question](screenshots/Question%202025-08-29%2023-02-31.png) | ![Answer](screenshots/Answer%202025-08-29%2023-03-12.png) |
+
+> **User sample:** `Hi! I'd like to take a trip to Paris! 😊`  
+> **Assistant (sample):** `Ciao Edoardo! Per organizzare il tuo viaggio a Parigi, avrei bisogno di...` (requesting missing fields)
+
+---
 
 ## Welcome
 

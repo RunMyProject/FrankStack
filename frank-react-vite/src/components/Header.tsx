@@ -3,53 +3,88 @@
  * Chat Header Component
  * -----------------------
  * Displays the header for the AI chat interface.
- * - Shows server status with color indicators
+ * Features:
+ * - Server status with color indicators
  * - User badge with logout functionality
  * - Language selector (IT/EN)
- * - Interactive weather display
+ * - Interactive weather widget (location, temperature, icon)
  * - Chat assistant title
  * - Provider selection (Ollama / ChatGPT)
  * - Debug toggle button
  * - API key input for ChatGPT when selected
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 29 August 2025
  */
 
-import React from 'react';
-import type { Lang, Provider, ServerStatus, WeatherData } from '../types/chat';
+import React, { useEffect, useRef } from 'react';
+import type { Lang, Provider, ServerStatus } from '../types/chat';
+import { useAuthStore } from '../store/useAuthStore';
+import { useCurrentWeather } from '../hooks/useWeather';
 
 type HeaderProps = {
-  userName: string;
-  locationName: string;
   currentLang: Lang;
   setCurrentLang: (l: Lang) => void;
   currentProvider: Provider;
   setCurrentProvider: (p: Provider) => void;
   serverStatus: ServerStatus;
-  weather: WeatherData;
   apiKey: string;
   setApiKey: (k: string) => void;
   toggleDebug: () => void;
   debugMode: boolean;
 };
 
+// Helper function to abbreviate specific cities
+const abbreviateCity = (city: string): string => {
+  if (!city) return '';
+  const customAbbr: Record<string,string> = {
+    'Cinisello Balsamo': 'Cinisello B.',
+    'San Giovanni Valdarno': 'S. Giovanni V.',
+    'Reggio Emilia': 'Reggio E.'
+  };
+  return customAbbr[city] || city;
+};
+
 const Header: React.FC<HeaderProps> = ({
-  userName,
-  locationName,
   currentLang,
   setCurrentLang,
   currentProvider,
   setCurrentProvider,
   serverStatus,
-  weather,
   apiKey,
   setApiKey,
   toggleDebug,
   debugMode
 }) => {
+  const { user, updateAIContext } = useAuthStore();
+  const userName = user ?? "Anonimus";
+
+  const { location, weather, isLoading, error, refreshWeather } = useCurrentWeather(currentLang);
+  const lastUpdateRef = useRef<string>('');
+
+  useEffect(() => {
+    if (location && weather && !isLoading && !error) {
+      const currentDataKey = `${location.city}-${location.lat}-${location.lon}-${weather.icon}-${weather.temp}-${currentLang}`;
+      if (lastUpdateRef.current !== currentDataKey) {        
+        updateAIContext({
+          lang: currentLang,
+          weatherData: { icon: weather.icon, desc: weather.desc, temp: weather.temp },
+          locationData: { city: location.city, lat: location.lat, lon: location.lon },
+        });
+        lastUpdateRef.current = currentDataKey;
+      }
+    }
+  }, [location?.city, location?.lat, location?.lon, weather?.icon, weather?.desc, weather?.temp, currentLang, isLoading, error]);
+
+  // Safe defaults
+  const cityRaw = location?.city || (isLoading ? 'Loading...' : 'Unknown');
+  const city = abbreviateCity(cityRaw);
+  const temp = weather?.temp ?? 0;
+  const desc = weather?.desc ?? (currentLang === 'IT' ? 'Caricamento...' : 'Loading...');
+  const icon = weather?.icon ?? '🌤';
+
   return (
-    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8 relative">
+    <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-8 relative pb-20 md:pb-13">
 
       {/* Server status indicator */}
       <div
@@ -86,16 +121,21 @@ const Header: React.FC<HeaderProps> = ({
         ))}
       </div>
 
-      {/* Interactive weather display */}
+      {/* Interactive weather widget */}
       <div
         className="absolute top-14 right-5 bg-white/20 text-white px-3 py-1 rounded-xl text-sm flex items-center gap-2 weather-hover z-10
-                  transition-transform duration-200 hover:scale-110 hover:bg-white/30 hover:shadow-lg cursor-pointer"
-        title={`${locationName} - ${weather.desc} - ${weather.temp}°C`}
+                  transition-transform duration-200 hover:scale-110 hover:bg-white/30 hover:shadow-lg cursor-pointer mt-4"
+        title={error ? `Weather error: ${error}` : `${city} - ${desc} - ${temp}°C`}
+        onClick={() => !isLoading && !error && refreshWeather?.()}
       >
-        <span className="text-lg">{weather.icon}</span>
-        <div>
-          <div className="text-xs opacity-80">{locationName}</div>
-          <div className="text-base font-semibold">{weather.temp}°C</div>
+        <span className="text-lg" style={{ animation: isLoading ? 'pulse 1s infinite' : 'none' }}>
+          {error ? '⚠️' : icon}
+        </span>
+        <div className="overflow-hidden whitespace-nowrap truncate max-w-[120px]">
+          <div className="text-xs opacity-80">{city}</div>
+          <div className="text-base font-semibold">
+            {error ? '--°C' : `${temp}°C`}
+          </div>
         </div>
       </div>
 

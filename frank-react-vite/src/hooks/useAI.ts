@@ -39,9 +39,9 @@ export const useAI = (
   const callAI = async (message: string): Promise<string> => {
     const controller = new AbortController();
     const timeout = setTimeout(() => {
-      if (debugMode && addLog) addLog('[EMERGENCY] Request timeout after 8 minutes!');
+      if (debugMode && addLog) addLog('[EMERGENCY] Request timeout after 10 minutes!');
       controller.abort();
-    }, 480000); // 8 minutes
+    }, 600000); // 10 minutes
 
     // Determine endpoint and payload based on provider
     const isChatEndpoint = provider === 'ollama' || provider === 'chatgpt';

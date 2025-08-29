@@ -11,10 +11,10 @@
  * - Debug panel for detailed logs
  * - Maximum words control for AI responses
  * 
- * Italian “cablati” texts are preserved as-is.
+ * Note: Italian texts inside the chat flow remain hardcoded by design.
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 29 August 2025
  */
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -23,7 +23,6 @@ import Header from '../components/Header';
 import MessageList from '../components/MessageList';
 import InputBar from '../components/InputBar';
 import DebugPanel from '../components/DebugPanel';
-import { useWeather } from '../hooks/useWeather';
 import { useServerHealth } from '../hooks/useServerHealth';
 import { useAI } from '../hooks/useAI';
 import { buildAIContext } from '../utils/contextBuilder';
@@ -36,7 +35,6 @@ const Chat: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [isAIPending, setIsAIPending] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
-  const [maxResponseWords, setMaxResponseWords] = useState(50);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [apiKey, setApiKey] = useState('');
 
@@ -45,25 +43,18 @@ const Chat: React.FC = () => {
   const userInputRef = useRef<HTMLInputElement>(null);
 
   // ----- User / AI configuration -----
-  const userName = 'Edoardo';
   const aiName = '🤖 FrankStack AI Assistant';
-  const locationName = chatLanguage === 'IT' ? 'Milano' : 'Milan';
-  const latitude = 45.4642;
-  const longitude = 9.19;
-
-  // ----- Custom hooks -----
-  const weatherData = useWeather(latitude, longitude, chatLanguage);
   const serverStatus = useServerHealth(isDebugMode, appendDebugLog);
   const { callAI } = useAI(aiProvider, apiKey, isDebugMode, appendDebugLog, chatLanguage);
 
   // ----- Effects -----
   useEffect(() => {
-    // Scroll chat to bottom whenever messages change
+    // Auto-scroll to bottom when messages update
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
   useEffect(() => {
-    // Initialize welcome message based on language
+    // Initialize welcome message based on selected language
     const welcomeMessage = chatLanguage === 'IT'
       ? 'Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?'
       : 'Hello! I am your AI assistant. How can I help you today?';
@@ -78,20 +69,46 @@ const Chat: React.FC = () => {
 
   async function handleSendMessage(): Promise<void> {
     if (!userInput.trim()) return;
-    const aiContext = buildAIContext(maxResponseWords, aiName, locationName, weatherData, userName);
-    const finalMessage = aiContext + userInput;
+    const finalMessage = buildAIContext(aiName, userInput);
 
     // Append user message
-    setChatMessages(prev => [...prev, { id: Date.now().toString(), type: 'user', content: userInput, timestamp: new Date() }]);
+    setChatMessages(prev => [...prev, { 
+      id: Date.now().toString(), 
+      type: 'user', 
+      content: userInput, 
+      timestamp: new Date() 
+    }]);
     setUserInput('');
     setIsAIPending(true);
 
     try {
       const aiResponse = await callAI(finalMessage);
-      setChatMessages(prev => [...prev, { id: Date.now().toString() + '_ai', type: 'ai', content: aiResponse, timestamp: new Date() }]);
+
+      // ✅ Parse JSON, fallback if invalid
+      let parsedAnswer = aiResponse;
+      try {
+        const parsed = JSON.parse(aiResponse);
+        if (parsed.answer) {
+          parsedAnswer = parsed.answer;
+        }
+      } catch (e) {
+        if (e instanceof Error) console.warn("AI response not valid JSON. Falling back to raw text.");
+      }
+
+      setChatMessages(prev => [...prev, { 
+        id: Date.now().toString() + '_ai', 
+        type: 'ai', 
+        content: parsedAnswer, 
+        timestamp: new Date() 
+      }]);
     } catch (error) {
       if (error instanceof Error) {
-        setChatMessages(prev => [...prev, { id: Date.now().toString() + '_err', type: 'ai', content: `Errore: ${error.message}`, timestamp: new Date() }]);
+        setChatMessages(prev => [...prev, { 
+          id: Date.now().toString() + '_err', 
+          type: 'ai', 
+          content: `Error: ${error.message}`, 
+          timestamp: new Date() 
+        }]);
       }
     } finally {
       setIsAIPending(false);
@@ -114,20 +131,21 @@ const Chat: React.FC = () => {
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header with controls for language, provider, server status, weather, API key, debug */}
         <Header
-          userName={userName}
-          locationName={locationName}
           currentLang={chatLanguage}
           setCurrentLang={setChatLanguage}
           currentProvider={aiProvider}
           setCurrentProvider={setAIProvider}
           serverStatus={serverStatus}
-          weather={weatherData}
           apiKey={apiKey}
           setApiKey={setApiKey}
           toggleDebug={() => setIsDebugMode(!isDebugMode)}
           debugMode={isDebugMode}
         />
-        <MessageList messages={chatMessages} isLoading={isAIPending} currentLang={chatLanguage} messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>} />
+        <MessageList 
+          messages={chatMessages} 
+          isLoading={isAIPending} 
+          messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>} 
+        />
         {isDebugMode && <DebugPanel logs={debugLogs} />}
         <InputBar
           messageInputRef={userInputRef as React.RefObject<HTMLInputElement>}
@@ -136,9 +154,6 @@ const Chat: React.FC = () => {
           sendMessage={handleSendMessage}
           clearChat={handleClearChat}
           isLoading={isAIPending}
-          currentLang={chatLanguage}
-          maxWords={maxResponseWords}
-          setMaxWords={setMaxResponseWords}
         />
       </div>
     </div>
