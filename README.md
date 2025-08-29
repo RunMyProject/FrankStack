@@ -24,8 +24,8 @@ Take a quick look at the AI in action. Edoardo asks the assistant for a trip to 
 |----------|--------|
 | ![Question](screenshots/Question%202025-08-29%2023-02-31.png) | ![Answer](screenshots/Answer%202025-08-29%2023-03-12.png) |
 
-> **User sample:** `Hi! I'd like to take a trip to Paris! 😊`  
-> **Assistant (sample):** `Ciao Edoardo! Per organizzare il tuo viaggio a Parigi, avrei bisogno di...` (requesting missing fields)
+> **User sample:** `Hi! I'd like to take a trip to Paris! 😊`
+> **Assistant (sample):** `Sure Edoardo, could you please let me know ...` (requesting missing fields)
 
 ---
 
