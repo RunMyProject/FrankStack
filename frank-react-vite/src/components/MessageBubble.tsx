@@ -8,10 +8,10 @@
  * - Fade-in animation for new messages
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 30 August 2025
  */
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import type { ChatMessage } from '../types/chat';
 
 interface MessageBubbleProps {
@@ -32,10 +32,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isUser }) => {
   const aiClasses =
     'bg-gray-100 text-gray-900 self-start shadow-[0_2px_8px_rgba(0,0,0,0.1)] hover:scale-[1.02]';
 
+  // FIXED: Log solo una volta per messaggio usando useEffect
+  const hasLoggedRef = useRef(false);
+  
+  useEffect(() => {
+    if (!hasLoggedRef.current) {
+      console.log("MessageBubble: " + JSON.stringify(message.aIContext));
+      hasLoggedRef.current = true;
+    }
+  }, [message.aIContext]);
+
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+  <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div className={`${baseClasses} ${isUser ? userClasses : aiClasses}`}>
-        {message.content}
+        {isUser ? message.aIContext.question : message.aIContext.answer}
       </div>
     </div>
   );

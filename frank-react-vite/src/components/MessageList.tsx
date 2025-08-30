@@ -8,7 +8,7 @@
  * - Auto-scrolls to the latest message if a ref is provided
  *
  * Author: Edoardo Sabatini
- * Date: 29 August 2025
+ * Date: 30 August 2025
  */
 
 import React from 'react';
@@ -27,8 +27,10 @@ const MessageList: React.FC<MessageListProps> = ({
   isLoading,
   messagesEndRef,
 }) => {
-  const { aiContext } = useAuthStore();
-  const currentLang = aiContext.lang; // Current interface language
+  // ----- Zustand  / AI configuration - usa selector per minimizzare ri-render -----
+  const aIContext = useAuthStore(state => state.aIContext);
+  
+  const currentLang = aIContext.userLang; // Current interface language
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">

@@ -7,7 +7,7 @@
  * - Defines message structure, weather data, and AI request/response payloads
  * 
  * Author: Edoardo Sabatini
- * Date: 29 August 2025
+ * Date: 30 August 2025
  */
 
 /**
@@ -26,6 +26,65 @@ export type Lang = 'IT' | 'EN';
 export type ServerStatus = 'connecting' | 'online' | 'offline';
 
 /**
+ * AI context interface
+ */
+export interface AIContext {
+  //---
+  maxWords: number;
+  user: string;
+  userLang: Lang;
+  aiName: string;
+  cityStart: string;
+  //---
+  cityEnd?: string;
+  kindOfTravel?: string;
+  maxBudget?: string;
+  numberOfPeople?: string;
+  starsOfHotel?: string;
+  durationInDays?: string;
+  dateTimeStart?: string;
+  dateTimeEnd?: string;
+  numberOfLuggage?: string;
+  //---
+  currentDateTime: string;
+  weather: string;
+  temperature: number;
+  //---
+  rules: string;
+  question: string;
+  answer?: string;
+}
+
+/**
+ * Represents a single chat message
+ */
+export interface ChatMessage {
+  id: string;           // Unique message identifier
+  type: 'user' | 'ai';  // Message sender type
+  timestamp: Date;      // Message timestamp
+  aIContext: AIContext;
+}
+
+/**
+ * Structure of AI response
+ */
+export interface AIResponse {
+  success: boolean;     // Indicates if request was successful
+  response?: string;    // AI response text
+  error?: string;       // Error message if request failed
+}
+
+/**
+ * Payload for sending a message to the AI
+ */
+export interface AIRequestPayload {
+  message: string;      // User message
+  provider: Provider;   // Selected AI provider
+  apiKey?: string;      // Optional API key
+  debug?: boolean;      // Optional debug flag
+}
+
+/**
  * Location information structure
  */
 export interface LocationData {
@@ -41,33 +100,4 @@ export interface WeatherData {
   icon: string;   // Weather icon code
   desc: string;   // Weather description
   temp: number;   // Temperature in Celsius
-}
-
-/**
- * Represents a single chat message
- */
-export interface ChatMessage {
-  id: string;           // Unique message identifier
-  type: 'user' | 'ai';  // Message sender type
-  content: string;      // Message content
-  timestamp: Date;      // Message timestamp
-}
-
-/**
- * Payload for sending a message to the AI
- */
-export interface AIRequestPayload {
-  message: string;      // User message
-  provider: Provider;   // Selected AI provider
-  apiKey?: string;      // Optional API key
-  debug?: boolean;      // Optional debug flag
-}
-
-/**
- * Structure of AI response
- */
-export interface AIResponse {
-  success: boolean;     // Indicates if request was successful
-  response?: string;    // AI response text
-  error?: string;       // Error message if request failed
 }

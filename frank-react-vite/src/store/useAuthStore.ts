@@ -5,24 +5,14 @@
  * Zustand store to manage authentication state.
  * - Tracks current user and authentication status
  * - Provides login and logout actions
- * - Simple demo credentials check included
+ * - Maintains AI context with defaults
  * 
  * Author: Edoardo Sabatini
- * Date: 29 August 2025
+ * Date: 30 August 2025
  */
 
 import { create } from 'zustand';
-import type { Lang, WeatherData, LocationData } from '../types/chat';
-
-/**
- * AI context interface
- */
-interface AIContext {
-  maxWords: number;
-  lang: Lang;
-  weatherData: WeatherData;
-  locationData: LocationData;
-}
+import type { AIContext } from '../types/chat';
 
 /**
  * Authentication state interface
@@ -30,7 +20,7 @@ interface AIContext {
 interface AuthState {
   user: string | null;                                     // Current logged-in user
   isAuthenticated: boolean;                                // Authentication flag
-  aiContext: AIContext;                                    // The AI context
+  aIContext: AIContext;                                    // The AI context
   login: (username: string, password: string) => void;     // Login action
   logout: () => void;                                      // Logout action
   updateAIContext: (context: Partial<AIContext>) => void;  // Update AI context
@@ -40,10 +30,28 @@ interface AuthState {
  * Default AI context values
  */
 const defaultAIContext: AIContext = {
-  maxWords: 50,       
-  lang: 'EN',         
-  weatherData: { icon: '', desc: '', temp: 0 },
-  locationData: { city: '', lat: 0, lon: 0 },
+  maxWords: 50,
+  user: '',
+  userLang: 'EN',
+  aiName: 'FrankStack (Travel Assistant)',
+  cityStart: '',
+  cityEnd: '',
+  kindOfTravel: '',
+  maxBudget: '',
+  numberOfPeople: '',
+  starsOfHotel: '',
+  durationInDays: '',
+  dateTimeStart: '',
+  dateTimeEnd: '',
+  numberOfLuggage: '',
+  currentDateTime: '',
+  weather: '',
+  temperature: 0,
+  question: '',
+  answer: "*",
+  rules: "1: If any fields are missing, include them in the JSON output with the value '?' and set 'answer' to a natural prompt asking for the missing info. \
+          2: If all fields are present, set 'answer' to 'ok'. \
+          3: Return only JSON, maintaining the original input structure, with the filled fields retrieved from the question, no extra explanations or comments."
 };
 
 /**
@@ -52,12 +60,8 @@ const defaultAIContext: AIContext = {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAuthenticated: false,
-  aiContext: defaultAIContext,
+  aIContext: defaultAIContext,
 
-  /**
-   * Login action
-   * Simple demo check for credentials
-   */
   login: (username, password) => {
     if (username === "Edoardo" && password === "12345") {
       set({ user: username, isAuthenticated: true });
@@ -66,20 +70,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  /**
-   * Logout action
-   */
   logout: () => set({ 
     user: null, 
     isAuthenticated: false,
-    aiContext: defaultAIContext
+    aIContext: defaultAIContext
   }),
 
-  /**
-   * Update AI context
-   */
   updateAIContext: (context) =>
     set((state) => ({
-      aiContext: { ...state.aiContext, ...context }
+      aIContext: { ...state.aIContext, ...context }
     })),
 }));

@@ -14,17 +14,15 @@
  * - API key input for ChatGPT when selected
  * 
  * Author: Edoardo Sabatini
- * Date: 29 August 2025
+ * Date: 30 August 2025
  */
 
 import React, { useEffect, useRef } from 'react';
 import type { Lang, Provider, ServerStatus } from '../types/chat';
-import { useAuthStore } from '../store/useAuthStore';
 import { useCurrentWeather } from '../hooks/useWeather';
+import { useAuthStore } from '../store/useAuthStore';
 
 type HeaderProps = {
-  currentLang: Lang;
-  setCurrentLang: (l: Lang) => void;
   currentProvider: Provider;
   setCurrentProvider: (p: Provider) => void;
   serverStatus: ServerStatus;
@@ -46,8 +44,6 @@ const abbreviateCity = (city: string): string => {
 };
 
 const Header: React.FC<HeaderProps> = ({
-  currentLang,
-  setCurrentLang,
   currentProvider,
   setCurrentProvider,
   serverStatus,
@@ -56,31 +52,36 @@ const Header: React.FC<HeaderProps> = ({
   toggleDebug,
   debugMode
 }) => {
-  const { user, updateAIContext } = useAuthStore();
-  const userName = user ?? "Anonimus";
 
-  const { location, weather, isLoading, error, refreshWeather } = useCurrentWeather(currentLang);
+  // ----- Zustand  / AI configuration - usa selector per minimizzare ri-render -----
+  const aIContext = useAuthStore(state => state.aIContext);
+  const updateAIContext = useAuthStore(state => state.updateAIContext);
+
+  const { location, weather, isLoading, error, refreshWeather } = useCurrentWeather(aIContext.userLang);
   const lastUpdateRef = useRef<string>('');
 
+  // ---- effect sulla weather update: limitare dipendenze ----
+  // ---- Importante: non mettere aIContext intero nelle dipendenze - solo i campi che usi (userLang) e updateAIContext. ---
   useEffect(() => {
     if (location && weather && !isLoading && !error) {
-      const currentDataKey = `${location.city}-${location.lat}-${location.lon}-${weather.icon}-${weather.temp}-${currentLang}`;
-      if (lastUpdateRef.current !== currentDataKey) {        
+      const currentDataKey = `${location.city}-${location.lat}-${location.lon}-${weather.icon}-${weather.temp}-${aIContext.userLang}`;
+      if (lastUpdateRef.current !== currentDataKey) {
+        // PASSA SOLO I CAMPI MODIFICATI
         updateAIContext({
-          lang: currentLang,
-          weatherData: { icon: weather.icon, desc: weather.desc, temp: weather.temp },
-          locationData: { city: location.city, lat: location.lat, lon: location.lon },
+          weather: weather.desc,
+          temperature: weather.temp,
+          cityStart: location.city
         });
         lastUpdateRef.current = currentDataKey;
       }
-    }
-  }, [location?.city, location?.lat, location?.lon, weather?.icon, weather?.desc, weather?.temp, currentLang, isLoading, error]);
+      }
+  }, [location, weather, isLoading, error, aIContext.userLang, updateAIContext]);
 
   // Safe defaults
   const cityRaw = location?.city || (isLoading ? 'Loading...' : 'Unknown');
   const city = abbreviateCity(cityRaw);
   const temp = weather?.temp ?? 0;
-  const desc = weather?.desc ?? (currentLang === 'IT' ? 'Caricamento...' : 'Loading...');
+  const desc = weather?.desc ?? (aIContext.userLang === 'IT' ? 'Caricamento...' : 'Loading...');
   const icon = weather?.icon ?? '🌤';
 
   return (
@@ -100,10 +101,10 @@ const Header: React.FC<HeaderProps> = ({
       {/* User badge with logout */}
       <div
         className="absolute top-12 left-4 w-10 h-10 bg-white/90 text-indigo-600 rounded-full flex items-center justify-center font-bold text-lg cursor-pointer shadow hover:scale-110 transition-transform"
-        title={`Logout (${userName})`}
+        title={`Logout (${aIContext.user})`}
         onClick={() => window.dispatchEvent(new CustomEvent('logout'))} 
       >
-        {userName.charAt(0).toUpperCase()}
+        {aIContext.user.charAt(0).toUpperCase()}
       </div>
 
       {/* Language selector */}
@@ -111,9 +112,9 @@ const Header: React.FC<HeaderProps> = ({
         {(['IT','EN'] as Lang[]).map((l) => (
           <button
             key={l}
-            onClick={() => setCurrentLang(l)}
+            onClick={() => { updateAIContext({ userLang: l})} }
             className={`px-3 py-1 text-xs rounded-full border transition-all ${
-              currentLang === l ? 'bg-white text-indigo-600' : 'border-white/50 hover:bg-white/10'
+              aIContext.userLang === l ? 'bg-white text-indigo-600' : 'border-white/50 hover:bg-white/10'
             }`}
           >
             {l}
@@ -172,7 +173,7 @@ const Header: React.FC<HeaderProps> = ({
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder={currentLang === 'IT' ? 'API Key OpenAI' : 'Enter OpenAI API Key'}
+            placeholder={aIContext.userLang === 'IT' ? 'API Key OpenAI' : 'Enter OpenAI API Key'}
             className="w-full p-3 rounded-lg bg-white/10 text-white placeholder-white/70 border border-white/30"
           />
         </div>

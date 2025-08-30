@@ -8,7 +8,7 @@
  * - Renders Chat component when authenticated
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 30 August 2025
  */
 
 import { useEffect } from 'react';
@@ -28,6 +28,15 @@ export default function Home() {
     return () => window.removeEventListener('logout', handleLogout);
   }, [logout]);
 
+  // FIXED: Login con impostazione lingua italiana per Edoardo
+  const handleEdoardoLogin = () => {
+    login('Edoardo', '12345');
+    // Dopo il login, imposta la lingua italiana per Edoardo
+    const { updateAIContext } = useAuthStore.getState();
+    updateAIContext({ user: 'Edoardo' });
+    updateAIContext({ userLang: 'IT' });
+  };
+
   // ----- Render -----
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
@@ -36,7 +45,7 @@ export default function Home() {
         <>
           <img src={ReactLogo} className="w-32 h-32 animate-spin" alt="React logo" />
           <h1 className="text-2xl font-bold mt-4">Login Demo</h1>
-          <Button onClick={() => login('Edoardo', '12345')}>Login</Button>
+          <Button onClick={handleEdoardoLogin}>Login</Button>
         </>
       ) : (
         // Authenticated: show chat

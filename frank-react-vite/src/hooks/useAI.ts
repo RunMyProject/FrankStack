@@ -8,10 +8,10 @@
  * - Automatically includes API key for ChatGPT
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 30 August 2025
  */
 
-import type { Lang, Provider, AIResponse, AIRequestPayload } from '../types/chat';
+import type { AIContext, Provider, AIResponse, AIRequestPayload } from '../types/chat';
 
 /**
  * useAI hook
@@ -27,16 +27,15 @@ export const useAI = (
   apiKey: string,
   debugMode = false,
   addLog?: (msg: string) => void,
-  lang: Lang = 'IT'
 ) => {
   const serverUrl = 'http://localhost:3000'; // Node.js server port
 
   /**
    * Sends a message to the AI and returns the response
-   * @param message User message to send
+   * @param aIContext User message to send
    * @returns AI response text
    */
-  const callAI = async (message: string): Promise<string> => {
+  const callAI = async (aIContext: AIContext): Promise<AIContext> => {
     const controller = new AbortController();
     const timeout = setTimeout(() => {
       if (debugMode && addLog) addLog('[EMERGENCY] Request timeout after 10 minutes!');
@@ -46,6 +45,8 @@ export const useAI = (
     // Determine endpoint and payload based on provider
     const isChatEndpoint = provider === 'ollama' || provider === 'chatgpt';
     const endpoint = isChatEndpoint ? '/chat' : '/api/chat';
+    aIContext.answer = "*";
+    const message = JSON.stringify(aIContext);
 
     const payload: AIRequestPayload = {
       message,
@@ -57,7 +58,7 @@ export const useAI = (
     // Validate API key for ChatGPT
     if (provider === 'chatgpt' && !apiKey.trim()) {
       throw new Error(
-        lang === 'EN' ? 'API Key required for ChatGPT' : 'API Key richiesta per ChatGPT'
+        aIContext.userLang === 'EN' ? 'API Key required for ChatGPT' : 'API Key richiesta per ChatGPT'
       );
     }
 
@@ -85,7 +86,36 @@ export const useAI = (
         addLog(JSON.stringify(data, null, 2));
       }
 
-      if (data.success) return data.response as string;
+      // dopo aver fatto `const data: AIResponse = await response.json();`
+      if (data.success) {
+        // dati che possono essere o un oggetto AIContext o una stringa JSON
+        let aIContextResponse: AIContext = aIContext;
+        aIContextResponse.answer = '';
+
+        if (typeof data.response === 'string') {
+          console.log("data.response: " +  + JSON.stringify(data.response));
+          // prova a fare parse della stringa JSON
+          try {
+            aIContextResponse = JSON.parse(data.response) as AIContext;
+            console.log("aIContextResponse: " +  aIContextResponse);
+          } catch (err) {
+            if(err instanceof Error) throw new Error('Server returned invalid JSON for AIContext');
+          }
+        }
+        else {
+          throw new Error('Unexpected response format from server');
+        }
+
+        // semplice validazione runtime (asegno fallback per campi critici)
+        if (!aIContextResponse || !aIContextResponse.answer || aIContextResponse.answer.trim() == '') {
+          // se necessario, fallback o errore
+          aIContextResponse.answer = 'Answer Error!';
+        }
+
+        return aIContextResponse;
+      }
+      
+      // se non success:
       throw new Error(data.error || 'Unknown server error');
 
     } catch (error: unknown) {
@@ -93,13 +123,13 @@ export const useAI = (
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
           if (addLog) addLog('[EMERGENCY] AbortError detected: request aborted due to timeout!');
-          throw new Error(lang === 'EN' ? 'Request timed out' : 'Richiesta scaduta (timeout)');
+          throw new Error(aIContext.userLang === 'EN' ? 'Request timed out' : 'Richiesta scaduta (timeout)');
         }
 
         const msg = error.message || 'Network error';
         if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) {
           throw new Error(
-            lang === 'EN'
+            aIContext.userLang === 'EN'
               ? 'Cannot connect to server. Ensure Node.js server is running on port 3000.'
               : 'Impossibile connettersi al server. Assicurati che il server Node.js sia in esecuzione sulla porta 3000.'
           );
