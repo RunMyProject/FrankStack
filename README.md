@@ -13,7 +13,7 @@ After countless trials, frustrations, and testing multiple models on an 8 GB CUD
 
 ---
 
-## 📸 Test Demo (Italian scenario)
+### 📋 Booking Process Demo (Italian scenario)
 
 **User question (Italian, for demo purposes):**
 `Voglio fare un viaggio per Parigi! Budget 1000, siamo in 2 persone. Partenza domani mattina, ritorno lunedì prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle. 😊`
@@ -36,13 +36,23 @@ After countless trials, frustrations, and testing multiple models on an 8 GB CUD
 - Luggages: 2
 ```
 
-**Screenshot reference:** `screenshots/Booking_process_started_06_09_2025.png`
-
----
+**Screenshot reference:**  
+![Booking process started](screenshots/Booking_process_started_06_09_2025.png)
 
 ### 📦 Available Models (8 GB VRAM CUDA)
 
-**Screenshot reference:** `screenshots/ollama_list 2025-09-06 22-40-40.png`
+```
+gemma2:9b-instruct-q4_0                   5.4 GB  
+phi4-mini-reasoning:latest                3.2 GB  
+llama3.2:1b                               1.3 GB  
+qwen2.5:3b                                1.9 GB  
+mistral:7b-instruct-v0.2-q4_0             4.1 GB  
+adrienbrault/nous-hermes2pro:Q4_0-json    4.1 GB  
+gpt-oss:20b                               13 GB  
+```
+
+**Screenshot reference:**  
+![Ollama model list](screenshots/ollama_list_2025-09-06_22-40-40.png)
 
 ---
 
