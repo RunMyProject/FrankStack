@@ -8,8 +8,9 @@
  * - Maintains AI context with defaults
  * 
  * Author: Edoardo Sabatini
- * Date: 30 August 2025
+ * Date: 31 August 2025
  */
+
 
 import { create } from 'zustand';
 import type { AIContext } from '../types/chat';
@@ -18,40 +19,42 @@ import type { AIContext } from '../types/chat';
  * Authentication state interface
  */
 interface AuthState {
-  user: string | null;                                     // Current logged-in user
-  isAuthenticated: boolean;                                // Authentication flag
-  aIContext: AIContext;                                    // The AI context
-  login: (username: string, password: string) => void;     // Login action
-  logout: () => void;                                      // Logout action
-  updateAIContext: (context: Partial<AIContext>) => void;  // Update AI context
+  user: string | null;                                      // Current logged-in user
+  isAuthenticated: boolean;                                 // Authentication flag
+  aIContext: AIContext;                                     // The AI context
+  login: (username: string, password: string) => void;      // Login action
+  logout: () => void;                                       // Logout action
+  updateAIContext: (context: Partial<AIContext>) => void;   // Update AI context
 }
 
 /**
- * Default AI context values
+ * Default AI context values for the model
  */
 const defaultAIContext: AIContext = {
-  maxWords: 50,
-  user: '',
-  userLang: 'EN',
-  aiName: 'FrankStack (Travel Assistant)',
-  cityStart: '',
-  cityEnd: '',
-  kindOfTravel: '',
-  maxBudget: '',
-  numberOfPeople: '',
-  starsOfHotel: '',
-  durationInDays: '',
-  dateTimeStart: '',
-  dateTimeEnd: '',
-  numberOfLuggage: '',
-  currentDateTime: '',
-  weather: '',
-  temperature: 0,
-  question: '',
-  answer: "*",
-  rules: "1: If any fields are missing, include them in the JSON output with the value '?' and set 'answer' to a natural prompt asking for the missing info. \
-          2: If all fields are present, set 'answer' to 'ok'. \
-          3: Return only JSON, maintaining the original input structure, with the filled fields retrieved from the question, no extra explanations or comments."
+  system: {
+    maxWords: 50,
+    user: "",
+    userLang: "English",
+    aiName: "FrankStack (Travel Assistant)",
+    currentDateTime: "",
+    weather: "",
+    temperatureWeather: 0,
+    bookingSystemEnabled: false
+  },
+  form: {
+    tripDeparture: "",
+    tripDestination: "",
+    dateTimeRoundTripDeparture: "",
+    dateTimeRoundTripReturn: "",
+    durationOfStayInDays: 0,
+    travelMode: "",
+    budget: 0,
+    people: 0,
+    starsOfHotel: 0,
+    luggages: 0
+  },
+  input: "",
+  output: ""
 };
 
 /**
@@ -64,20 +67,45 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (username, password) => {
     if (username === "Edoardo" && password === "12345") {
-      set({ user: username, isAuthenticated: true });
+      set((state) => ({
+        user: username,
+        isAuthenticated: true,
+        aIContext: {
+          ...state.aIContext,
+          system: {
+            ...state.aIContext.system,
+            user: "Edoardo",
+            userLang: "Italian"
+          },
+          form: {
+            ...state.aIContext.form
+          }
+        }
+      }));
     } else {
       console.error("Invalid credentials");
     }
   },
 
-  logout: () => set({ 
-    user: null, 
+  logout: () => set({
+    user: null,
     isAuthenticated: false,
     aIContext: defaultAIContext
   }),
 
-  updateAIContext: (context) =>
+  updateAIContext: (partial) =>
     set((state) => ({
-      aIContext: { ...state.aIContext, ...context }
-    })),
+      aIContext: {
+        ...state.aIContext,
+        ...partial,
+        system: {
+          ...state.aIContext.system,
+          ...(partial.system || {})
+        },
+        form: {
+          ...state.aIContext.form,
+          ...(partial.form || {})
+        }
+      }
+    }))
 }));

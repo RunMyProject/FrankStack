@@ -9,19 +9,18 @@
     "test": "node server.js \"ciao come stai?\" --provider ollama --debug"
   },
   "keywords": [
-    "ai", 
-    "chat", 
-    "ollama", 
-    "chatgpt", 
-    "nodejs", 
+    "ai",
+    "chat",
+    "ollama",
+    "chatgpt",
+    "nodejs",
     "docker"
   ],
   "author": "Edoardo Sabatini",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.18.2",
-    "node-fetch": "^2.7.0",
-    "cors": "^2.8.5"
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
@@ -30,4 +29,3 @@
     "node": ">=14.0.0"
   }
 }
-

@@ -1,5 +1,51 @@
 # FrankStack
 
+*Updated: 6 September 2025*
+
+## 🎉 Today's Progress (short)
+
+After countless trials, frustrations, and testing multiple models on an 8 GB CUDA VRAM laptop, we finally reached a **stable version** of the AI interaction pipeline.
+
+* AI snapshot validation & form completeness checks implemented
+* Structured printing of all travel form fields
+* Integration of Italian-language test scenario for end-to-end verification
+* Consistent behavior across multiple test runs
+
+---
+
+## 📸 Test Demo (Italian scenario)
+
+**User question (Italian, for demo purposes):**
+`Voglio fare un viaggio per Parigi! Budget 1000, siamo in 2 persone. Partenza domani mattina, ritorno lunedì prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle. 😊`
+
+**AI response:**
+`Processo di prenotazione avviato, attendere prego...`
+
+**📋 Travel Data:**
+
+```
+- Departure: Cinisello Balsamo
+- Destination: Parigi
+- Departure Date: Sun Sep 7 2025 00:00
+- Return Date: Wed Sep 10 2025 00:00
+- Duration of Stay (days): 3
+- Travel Mode: treno
+- Budget: 1000
+- People: 2
+- Hotel Stars: 4
+- Luggages: 2
+```
+
+**Screenshot reference:** `screenshots/Booking_process_started_06_09_2025.png`
+
+---
+
+### 📦 Available Models (8 GB VRAM CUDA)
+
+**Screenshot reference:** `screenshots/ollama_list 2025-09-06 22-40-40.png`
+
+---
+
 *Updated: 29 August 2025*
 
 ---

@@ -7,7 +7,7 @@
  * - Defines message structure, weather data, and AI request/response payloads
  * 
  * Author: Edoardo Sabatini
- * Date: 30 August 2025
+ * Date: 31 August 2025
  */
 
 /**
@@ -15,44 +15,61 @@
  */
 export type Provider = 'ollama' | 'chatgpt';
 
-/**
- * Supported chat languages
- */
-export type Lang = 'IT' | 'EN';
 
 /**
  * Server connection status
  */
 export type ServerStatus = 'connecting' | 'online' | 'offline';
 
+
+/**
+ * Supported chat languages
+ */
+export type Lang = 'Italian' | 'English';
+
 /**
  * AI context interface
  */
-export interface AIContext {
-  //---
-  maxWords: number;
+
+/**
+ * System-level context (fisso, AI non deve modificarlo)
+ */
+export interface SystemContext {
+  maxWords: number | 50;
   user: string;
   userLang: Lang;
   aiName: string;
-  cityStart: string;
-  //---
-  cityEnd?: string;
-  kindOfTravel?: string;
-  maxBudget?: string;
-  numberOfPeople?: string;
-  starsOfHotel?: string;
-  durationInDays?: string;
-  dateTimeStart?: string;
-  dateTimeEnd?: string;
-  numberOfLuggage?: string;
-  //---
   currentDateTime: string;
   weather: string;
-  temperature: number;
-  //---
-  rules: string;
-  question: string;
-  answer?: string;
+  temperatureWeather: number | 0;
+  bookingSystemEnabled: boolean;
+}
+
+/**
+ * Form da compilare dall'AI
+ */
+export interface FillForm {
+  
+  tripDeparture: string | "";
+  tripDestination: string | "";
+  dateTimeRoundTripDeparture: string | "";
+  dateTimeRoundTripReturn: string | "";
+  durationOfStayInDays: number | 0;
+  travelMode: string | "";
+  budget: number | 0;
+  people: number | 0;
+  starsOfHotel: number | 0;
+  luggages: number | 0;
+}
+
+/**
+ * Contesto AI complessivo
+ */
+export interface AIContext {
+  system: SystemContext; // fissi
+  form: FillForm;        // compilabili
+  input: string;         // input utente
+  output: string;        // output AI
 }
 
 /**
@@ -78,10 +95,10 @@ export interface AIResponse {
  * Payload for sending a message to the AI
  */
 export interface AIRequestPayload {
-  message: string;      // User message
-  provider: Provider;   // Selected AI provider
-  apiKey?: string;      // Optional API key
-  debug?: boolean;      // Optional debug flag
+  aIContext: AIContext;   // User message
+  provider?: Provider;    // Selected AI provider
+  apiKey?: string;        // Optional API key
+  debug?: boolean;        // Optional debug flag
 }
 
 /**

@@ -30,11 +30,7 @@ export default function Home() {
 
   // FIXED: Login con impostazione lingua italiana per Edoardo
   const handleEdoardoLogin = () => {
-    login('Edoardo', '12345');
-    // Dopo il login, imposta la lingua italiana per Edoardo
-    const { updateAIContext } = useAuthStore.getState();
-    updateAIContext({ user: 'Edoardo' });
-    updateAIContext({ userLang: 'IT' });
+    login("Edoardo", "12345");
   };
 
   // ----- Render -----

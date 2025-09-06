@@ -8,7 +8,7 @@
  * - Auto-scrolls to the latest message if a ref is provided
  *
  * Author: Edoardo Sabatini
- * Date: 30 August 2025
+ * Date: 31 August 2025
  */
 
 import React from 'react';
@@ -30,7 +30,7 @@ const MessageList: React.FC<MessageListProps> = ({
   // ----- Zustand  / AI configuration - usa selector per minimizzare ri-render -----
   const aIContext = useAuthStore(state => state.aIContext);
   
-  const currentLang = aIContext.userLang; // Current interface language
+  const currentLang = aIContext.system.userLang; // Current interface language
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-2">
@@ -44,7 +44,7 @@ const MessageList: React.FC<MessageListProps> = ({
         <div className="flex items-center space-x-2 p-2 animate-fadeIn">
           <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="text-gray-600 font-semibold">
-            {currentLang === 'IT' ? "L'AI sta pensando" : 'AI is thinking'}
+            {currentLang === 'Italian' ? "L'AI sta pensando" : 'AI is thinking'}
             <span className="ml-1">
               {[0, 200, 400].map((delay) => (
                 <span

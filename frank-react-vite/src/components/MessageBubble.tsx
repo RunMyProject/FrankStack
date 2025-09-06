@@ -45,7 +45,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isUser }) => {
   return (
   <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div className={`${baseClasses} ${isUser ? userClasses : aiClasses}`}>
-        {isUser ? message.aIContext.question : message.aIContext.answer}
+        {isUser ? message.aIContext.input : message.aIContext.output}
       </div>
     </div>
   );

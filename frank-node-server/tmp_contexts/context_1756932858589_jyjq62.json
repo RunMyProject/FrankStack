@@ -1,0 +1,29 @@
+{
+  "originalContext": {
+    "system": {
+      "maxWords": 50,
+      "user": "Edoardo",
+      "userLang": "IT",
+      "aiName": "FrankStack (Travel Assistant)",
+      "currentDateTime": "Wed Sep 3 2025 22:54",
+      "weather": "Sereno",
+      "temperatureWeather": 22
+    },
+    "form": {
+      "tripDeparture": "Cinisello Balsamo",
+      "tripDestination": "",
+      "dateTimeRoundTripDeparture": "",
+      "dateTimeRoundTripReturn": "",
+      "durationOfStayInDays": 0,
+      "travelMode": "",
+      "budget": 0,
+      "people": 0,
+      "starsOfHotel": 0,
+      "luggages": 0
+    },
+    "input": "Voglio fare un viaggio per Parigi!",
+    "output": ""
+  },
+  "firstResponse": "Ciao Edoardo! Sono felice di aiutarti a pianificare il tuo viaggio.\n\nPer capire come impostare le valute vuoi utilizzare (0) o le parole chiave vuoi utilizzare (0)?",
+  "savedAt": "2025-09-03T20:54:18.589Z"
+}
