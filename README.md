@@ -51,8 +51,9 @@ adrienbrault/nous-hermes2pro:Q4_0-json    4.1 GB
 gpt-oss:20b                               13 GB  
 ```
 
-**Screenshot reference:**  
-![Ollama model list](screenshots/ollama_list_2025-09-06_22-40-40.png)
+**Screenshot reference:**
+
+![Ollama model list](screenshots/ollama_list%202025-09-06%2022-40-40.png)
 
 ---
 
