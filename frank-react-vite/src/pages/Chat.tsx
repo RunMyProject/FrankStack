@@ -5,7 +5,8 @@
  * Uses structured AIContext: system (fisso) + form (compilabile)
  * 
  * Author: Edoardo Sabatini
- * Date: 31 August 2025
+ * Date: September 13, 2025
+ * UPDATED: Added ReasoningPanel integration
  */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
@@ -14,6 +15,7 @@ import Header from '../components/Header';
 import MessageList from '../components/MessageList';
 import InputBar from '../components/InputBar';
 import DebugPanel from '../components/DebugPanel';
+import ReasoningPanel from '../components/ReasoningPanel';
 import { useServerHealth } from '../hooks/useServerHealth';
 import { useAI } from '../hooks/useAI';
 import { useAuthStore } from '../store/useAuthStore';
@@ -26,6 +28,9 @@ const Chat: React.FC = () => {
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [debugLogs, setDebugLogs] = useState<string[]>([]);
   const [apiKey, setApiKey] = useState('');
+  
+  const [showReasoningPanel, setShowReasoningPanel] = useState(false);
+  const [currentProcessingContext, setCurrentProcessingContext] = useState<AIContext | undefined>(undefined);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -81,13 +86,15 @@ const Chat: React.FC = () => {
     };
 
     updateAIContext({ ...contextForAI, input: '', output: '?' });
-
+    setShowReasoningPanel(true);
     setChatMessages(prev => [
       ...prev,
       { id: Date.now().toString(), type: 'user', timestamp: new Date(), aIContext: contextForAI }
     ]);
 
+    setCurrentProcessingContext(contextForAI);
     setIsAIPending(true);
+    
     try {
         const aiResponse = await callAI(contextForAI);
         updatedSystem.bookingSystemEnabled = aiResponse.system.bookingSystemEnabled;
@@ -107,11 +114,13 @@ const Chat: React.FC = () => {
           aiSnapshot.output += printFormSnapshot(aiSnapshot);
         }
 
-      updateAIContext(aiSnapshot);
-      setChatMessages(prev => [
-        ...prev,
-        { id: Date.now().toString() + '_ai', type: 'ai', timestamp: new Date(), aIContext: aiSnapshot }
-      ]);
+        setCurrentProcessingContext(aiSnapshot);
+        updateAIContext(aiSnapshot);
+        setChatMessages(prev => [
+          ...prev,
+          { id: Date.now().toString() + '_ai', type: 'ai', timestamp: new Date(), aIContext: aiSnapshot }
+        ]);
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       const errSnapshot: AIContext = { ...storeSnapshot, system: updatedSystem, input: '', output: `Error: ${errorMessage}` };
@@ -121,9 +130,19 @@ const Chat: React.FC = () => {
         { id: Date.now().toString() + '_err', type: 'ai', timestamp: new Date(), aIContext: errSnapshot }
       ]);
       appendDebugLog(`AI error: ${errorMessage}`);
-    } finally {
-      setIsAIPending(false);
-    }
+      
+      setCurrentProcessingContext(errSnapshot);
+    } 
+      finally {
+               setIsAIPending(false);      
+               /*
+               setTimeout(() => {
+                if (!isAIPending) {
+                  setCurrentProcessingContext(undefined);
+                }
+               }, 3000); // Hide after 3 seconds
+               */
+      }
   }
 
   function printFormSnapshot(aIContext : AIContext): string {
@@ -184,9 +203,18 @@ const Chat: React.FC = () => {
     const welcomeSnapshot: AIContext = { ...storeSnapshot, input: '', output: welcomeMessage, system: { ...storeSnapshot.system, currentDateTime: formatDateTime(new Date()) } };
     updateAIContext(welcomeSnapshot);
     setChatMessages([{ id: 'welcome', type: 'ai', timestamp: new Date(), aIContext: welcomeSnapshot }]);
+    
+    setShowReasoningPanel(false);
+    setCurrentProcessingContext(undefined);
+    
     inputRef.current?.focus();
     if (isDebugMode) appendDebugLog('Chat reset to welcome message.');
   }
+
+  const handleCloseReasoningPanel = () => {
+    setShowReasoningPanel(false);
+    setCurrentProcessingContext(undefined);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 flex justify-center items-center p-5">
@@ -213,6 +241,13 @@ const Chat: React.FC = () => {
           isLoading={isAIPending}
         />
       </div>
+
+      <ReasoningPanel
+        isVisible={showReasoningPanel}
+        isProcessing={isAIPending}
+        currentContext={currentProcessingContext}
+        onClose={handleCloseReasoningPanel}
+      />
     </div>
   );
 };

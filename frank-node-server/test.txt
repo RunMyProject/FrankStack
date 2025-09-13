@@ -1,3 +1,8 @@
+--------------------------
+- test.txt
+- Author: Edoardo Sabatini
+- Date: September 13, 2025
+--------------------------
 
 Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?
 Voglio fare un viaggio per Parigi!
@@ -11,8 +16,10 @@ Qual è il tuo budget per questo viaggio?
 ah guarda...non voglio spendere + di 1450 euro...credimi, ho le tasche a secco in questo periodo....
 Processo di prenotazione avviato, attendere prego...📋 Dati viaggio: - Partenza: Malpensa - Destinazione: Parigi - Data andata: Tue Sep 16 2025 00:00 - Data ritorno: Fri Sep 19 2025 00:00 - Durata soggiorno (giorni): 3 - Mezzo di trasporto: plane - Budget: 1450 - Persone: 2 - Stelle hotel: 3 - Valigie:
 
-
 -----------------------
+Valigie 77.
+-----------------------
+
 Voglio fare un viaggio per Parigi! Budget 1000, siamo in 2 persone. Partenza domani mattina, ritorno lunedi prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle. 😊
 
 -------------------------------------

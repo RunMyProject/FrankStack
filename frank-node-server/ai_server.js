@@ -3,7 +3,7 @@
  * -----------------------
  *
  * Author: Edoardo Sabatini
- * Date: 9 September 2025
+ * Date: 13 September 2025
  */
 
 const express = require('express');
@@ -16,7 +16,7 @@ app.use(cors());
 app.use(express.json());
 
 const MODEL = "gemma2:9b-instruct-q4_0";
-const TIMEOUT = 70000;
+const TIMEOUT = 120000;
 
 function getTimeStamp() {
     const now = new Date();
@@ -219,8 +219,9 @@ function getProcessBooking(originalContext, promptJsonSystem) {
         wrapUser("Compile a JSON object (give back the original structure without comments) in " +
             originalContext.system.userLang + " only: " + promptJson + " from sentence: " + originalContext.input) +
         wrapUser("It also uses system data, especially for dates, when the user does not clearly spell out dates. (example: tomorrow morning") +
-        wrapUser("travelMode example: car, plane, train; dateTimeRoundTripReturn is an ISO date extracted from a natural language sentence") + 
+        wrapUser("travelMode example: bus, car, plane, ship, train; dateTimeRoundTripReturn is an ISO date extracted from a natural language sentence") + 
         wrapUser("Sets the number of days of stay aligned with the dateTimeRoundTripDeparture and dateTimeRoundTripReturn fields") + 
+        wrapUser("travelMode translated into English") + 
         wrapAssistant(""); 
     log("\n" + "prompt (fill data)\n", prompt);
     const aiOutput = getResponse(prompt);
