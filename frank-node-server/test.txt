@@ -1,59 +1,55 @@
 --------------------------
 - test.txt
 - Author: Edoardo Sabatini
-- Date: September 13, 2025
+- Date: 21 September 2025
 --------------------------
 
+🇮🇹 Conversation 1
+
 Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?
-Voglio fare un viaggio per Parigi!
+Voglio fare un viaggio business per Parigi!
 Per favore, dimmi quanti persone viaggeranno e quante stelle desidera per l'hotel.
-siamo io e mia moglie e pernotteremo in un hotel a 3 stelle.
+siamo io e il mio strategy consultant e pernotteremo in un hotel a 4 stelle in business class.
 Per favore, dimmi la durata del tuo soggiorno in giorni e la data di ritorno per il volo di ritorno.
 direi tre giorni e la prossima settimana
 Per organizzare al meglio il tuo viaggio, mi serve sapere come ti muoverai (es. treno, aereo, auto) e quante valigie porterai.
 un volo da Malpensa con 3 bagagli
 Qual è il tuo budget per questo viaggio?
 ah guarda...non voglio spendere + di 1450 euro...credimi, ho le tasche a secco in questo periodo....
-Processo di prenotazione avviato, attendere prego...📋 Dati viaggio: - Partenza: Malpensa - Destinazione: Parigi - Data andata: Tue Sep 16 2025 00:00 - Data ritorno: Fri Sep 19 2025 00:00 - Durata soggiorno (giorni): 3 - Mezzo di trasporto: plane - Budget: 1450 - Persone: 2 - Stelle hotel: 3 - Valigie:
+Processo di prenotazione avviato, attendere prego...📋 Dati viaggio: - Partenza: Malpensa - Destinazione: Parigi - Data andata: Tue Sep 16 2025 00:00 - Data ritorno: Fri Sep 19 2025 00:00 - Durata soggiorno (giorni): 3 - Mezzo di trasporto: plane - Budget: 1450 - Persone: 2 - Stelle hotel: 4 - Valigie: 3
 
 -----------------------
-Valigie 77.
------------------------
+JSON aIContext 🇮🇹
 
-Voglio fare un viaggio per Parigi! Budget 1000, siamo in 2 persone. Partenza domani mattina, ritorno lunedi prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle. 😊
+{"aIContext":{"system":{"userLang":"it","bookingSystemEnabled":false},"form":{"tripDeparture":"","tripDestination":"","dateTimeRoundTripDeparture":"","dateTimeRoundTripReturn":"","durationOfStayInDays":0,"travelMode":"","budget":0,"people":0,"starsOfHotel":0,"luggages":0},"input":"Ciao!"}}
+
+{"aIContext":{"system":{"userLang":"it","bookingSystemEnabled":false},"form":{"tripDeparture":"","tripDestination":"","dateTimeRoundTripDeparture":"","dateTimeRoundTripReturn":"","durationOfStayInDays":0,"travelMode":"","budget":0,"people":0,"starsOfHotel":0,"luggages":0},"input":"Voglio fare un viaggio a Parigi!"}}
+
+{"aIContext":{"system":{"userLang":"it","bookingSystemEnabled":false},"form":{"tripDeparture":"","tripDestination":"","dateTimeRoundTripDeparture":"","dateTimeRoundTripReturn":"","durationOfStayInDays":0,"travelMode":"","budget":0,"people":0,"starsOfHotel":0,"luggages":0},
+"input":"Voglio fare un viaggio business per Parigi! Budget 1000, siamo io e il mio strategy consultant. Partenza domani mattina, ritorno lunedi prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle. 😊"}}
 
 -------------------------------------
 
-Voglio fare un viaggio per Parigi!
-Certo! siamo in 2 e non voglio spendere + di 1000 euro...per un periodo di 3-4 gg e partenza domani mattina
+🇬🇧 Conversation 2
 
-Ci ho ripensato, scusa, dopodomani in tarda serata, grazie!😊
+Hello! I am your AI assistant. How can I help you today?
+I want to take a business trip to Paris!
+Please tell me how many people will travel and the hotel star rating you want.
+It will be me and my strategy consultant, staying in a 4-star hotel in business class.
+Please tell me the duration of your stay and the return flight date.
+I would say three days, next week.
+To organize your trip best, I need to know how you will travel (train, plane, car) and how many bags you will bring.
+A flight from Malpensa with 3 bags.
+What is your budget for this trip?
+I don’t want to spend more than €1450… trust me, my pockets are empty these days…
+Booking process started, please wait...📋 Trip data: - Departure: Malpensa - Destination: Paris - Departure date: Tue Sep 16 2025 00:00 - Return date: Fri Sep 19 2025 00:00 - Duration (days): 3 - Travel mode: plane - Budget: 1450 - People: 2 - Hotel stars: 4 - Luggages: 3
 
-Ah! Giusto! hai ragione, Frank! Bagagli direi 2, mentre per l'hotel scegli un 3 stelle! 😊
-Un volo da Malpensa domani mattina verso o intorno alle 10 circa...non so, sono indeciso...
-ok confermo la data e l'aereo, grazie! 😊
+-----------------------
+JSON aIContext 🇬🇧
 
-siamo io e mia moglie
+{"aIContext":{"system":{"userLang":"en","bookingSystemEnabled":false},"form":{"tripDeparture":"","tripDestination":"","dateTimeRoundTripDeparture":"","dateTimeRoundTripReturn":"","durationOfStayInDays":0,"travelMode":"","budget":0,"people":0,"starsOfHotel":0,"luggages":0},"input":"Hello!"}}
 
-siamo io e mia moglie e pernotteremo in un hotel a 3 stelle.
+{"aIContext":{"system":{"userLang":"en","bookingSystemEnabled":false},"form":{"tripDeparture":"","tripDestination":"","dateTimeRoundTripDeparture":"","dateTimeRoundTripReturn":"","durationOfStayInDays":0,"travelMode":"","budget":0,"people":0,"starsOfHotel":0,"luggages":0},"input":"I want to take a trip to Paris!"}}
 
-non piu' di 1500 euro voglio spendere e prenota un hotel a 3 stelle....grazie.
-
-aereo da Malpensa
-
-
----------------
-
-Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?
-Voglio fare un viaggio per Parigi!
-Per organizzare al meglio il tuo viaggio, mi serve sapere: qual è il tuo budget e quante persone viaggeranno?
-non voglio spendere + di 1500 euro e saremo 4 persone
-Per organizzare al meglio il tuo viaggio, mi serve sapere come prevedi di spostarti (ad esempio, in treno, aereo o auto) e quante valigie ti serviranno.
-aereo e mi portero' 7 valigie!
-Per favore, dimmi per quanti giorni prevedi di rimanere e quante stelle desideri per l'hotel.
-penso di pernottare 3 notti in un hotel a 4 stelle.
-Per favore, dimmi la data e l'ora di partenza per il viaggio di andata e quella del ritorno.
-domani mattina e per il ritorno a fine permanenza.
-Mi mancano alcuni dettagli per aiutarti al meglio. Potresti dirmi dove vuoi andare, quando e con chi?
-
-Voglio fare un viaggio per Parigi! Budget 1000, siamo in 2 persone. Partenza domani mattina, ritorno lunedi prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle.
+{"aIContext":{"system":{"userLang":"en","bookingSystemEnabled":false},"form":{"tripDeparture":"","tripDestination":"","dateTimeRoundTripDeparture":"","dateTimeRoundTripReturn":"","durationOfStayInDays":0,"travelMode":"","budget":0,"people":0,"starsOfHotel":0,"luggages":0},
+"input":"I want to take a business trip to Paris! Budget 1000, it will be me and my strategy consultant. Departure tomorrow morning, return next Monday. Luggages 2. Travel mode: train. Staying in a 4-star hotel in business class. 😊"}}
