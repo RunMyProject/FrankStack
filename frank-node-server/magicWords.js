@@ -210,8 +210,9 @@ class MagicWords {
                 this.wrapUser("Also uses system data, e.g., dates, when not explicitly mentioned.") +
                 this.wrapUser("travelMode example: bus, car, plane; dateTimeRoundTripReturn is ISO date extracted from sentence") +
                 this.wrapUser("Sets duration aligned with departure and return dates") +
-                this.wrapUser("TravelMode translated into English; numerical expressions parsed") +
-                this.wrapUser("Overwrite fields if user specifies corrections.") +
+                this.wrapUser("TravelMode translated into English; numerical expressions parsed") + 
+                this.wrapUser("Allow user to edit existing fields") +
+                this.wrapUser("Overwrite fields if user specifies corrections") +
                 this.wrapAssistant("");
             utils.log("\n" + "prompt/fill data\n", prompt);
             const aiOutput = await getResponse(prompt, provider, apiKey, abortSignal);

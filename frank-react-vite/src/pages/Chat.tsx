@@ -9,13 +9,19 @@
  * Date: 21 September 2025
  */
 
+// Base
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import type { ChatMessage, Provider, AIContext, AIStatus } from "../types/chat";
+
+// Components
 import Header from "../components/Header";
 import MessageList from "../components/MessageList";
 import InputBar from "../components/InputBar";
 import DebugPanel from "../components/DebugPanel";
 import ReasoningPanel from "../components/ReasoningPanel";
+import BookingConfirmDialog from "../components/BookingConfirmDialog";
+
+// Miscellaneous
 import { useServerHealth } from "../hooks/useServerHealth";
 import { useAI } from "../hooks/useAI";
 import { useAuthStore } from "../store/useAuthStore";
@@ -38,6 +44,12 @@ const Chat: React.FC = () => {
   const [currentProcessingContext, setCurrentProcessingContext] = useState<
     AIContext | undefined
   >(undefined);
+
+  // -----------------------------
+  // Booking dialog state
+  // -----------------------------
+  const [showBookingDialog, setShowBookingDialog] = useState(false);
+  const [bookingContext, setBookingContext] = useState<AIContext | null>(null);
 
   // -----------------------------
   // Refs
@@ -256,14 +268,17 @@ const Chat: React.FC = () => {
         output: aiResponse.output ?? "?",
       };
 
-      // If form is complete -> auto start booking process
+      // NEW: If form is complete -> show booking dialog instead of auto-booking
       if (isFormComplete(aiSnapshot)) {
-        aiSnapshot.system.bookingSystemEnabled = false;
-        aiSnapshot.output =
-          aiSnapshot.system.userLang === "Italian"
-            ? "Processo di prenotazione avviato, attendere prego..."
-            : "Booking process started, please wait...";
-        aiSnapshot.output += printFormSnapshot(aiSnapshot);
+        aiSnapshot.system.bookingSystemEnabled = true; // Keep booking mode active
+        setBookingContext(aiSnapshot);
+        setShowBookingDialog(true);
+        setShowReasoningPanel(false); // Hide reasoning panel when showing booking dialog
+        
+        // Don't add a message yet - wait for user decision
+        setCurrentProcessingContext(aiSnapshot);
+        updateAIContext(aiSnapshot);
+        return;
       }
 
       setCurrentProcessingContext(aiSnapshot);
@@ -303,8 +318,55 @@ const Chat: React.FC = () => {
   }
 
   // -----------------------------
+  // Booking dialog handlers
+  // -----------------------------
+  const handleBookingConfirm = () => {
+    if (!bookingContext) return;
+    const message = bookingContext.system.userLang === "Italian"
+      ? "🎉 Avvio prenotazione, attendere prego..." : "🎉 Booking process started, please wait...";
+    
+    const snapshot: AIContext = { ...bookingContext, output: message, 
+      system: { ...bookingContext.system, bookingSystemEnabled: false }};
+    
+    updateAIContext(snapshot);
+    setChatMessages(prev => [...prev, { id: Date.now() + "_confirm", type: "ai", timestamp: new Date(), aIContext: snapshot }]);
+    setShowBookingDialog(false);
+    setBookingContext(null);
+  };
+
+  const handleBookingCancel = () => {
+    if (!bookingContext) return;
+    const message = bookingContext.system.userLang === "Italian"
+      ? "❌ Prenotazione annullata. Come posso aiutarti?" : "❌ Booking cancelled. How can I help you?";
+    
+    const snapshot: AIContext = { ...useAuthStore.getState().aIContext, 
+      form: { tripDeparture: "", tripDestination: "", dateTimeRoundTripDeparture: "", dateTimeRoundTripReturn: "", 
+        durationOfStayInDays: 0, travelMode: "", budget: 0, people: 0, starsOfHotel: 0, luggages: 0 },
+      output: message, system: { ...useAuthStore.getState().aIContext.system, bookingSystemEnabled: false }};
+    
+    updateAIContext(snapshot);
+    setChatMessages(prev => [...prev, { id: Date.now() + "_cancel", type: "ai", timestamp: new Date(), aIContext: snapshot }]);
+    setShowBookingDialog(false);
+    setBookingContext(null);
+    setShowReasoningPanel(false);
+  };
+
+  const handleBookingModify = (modificationRequest: string) => {
+    setShowBookingDialog(false);
+    setBookingContext(null);
+    handleSendMessage(modificationRequest);
+  };
+
+  const handleBookingClose = () => {
+    // Simply close dialog without any action
+    setShowBookingDialog(false);
+    setBookingContext(null);
+  };
+
+  // -----------------------------
   // Helpers
   // -----------------------------
+  /*
   function printFormSnapshot(aIContext: AIContext): string {
     const { form, system } = aIContext;
     if (system.userLang === "Italian") {
@@ -335,7 +397,8 @@ const Chat: React.FC = () => {
     - Luggages: ${form.luggages}`;
     }
   }
-
+  */
+ 
   function isFormComplete(aIContext: AIContext): boolean {
     const form = aIContext.form;
     const isNonEmptyString = (s: string | "") =>
@@ -360,37 +423,25 @@ const Chat: React.FC = () => {
   // -----------------------------
   function handleClearChat() {
     const storeSnapshot = useAuthStore.getState().aIContext;
-    const welcomeMessage =
-      storeSnapshot.system.userLang === "Italian"
-        ? "Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?"
-        : "Hello! I am your AI assistant. How can I help you today?";
+    const welcomeMessage = storeSnapshot.system.userLang === "Italian"
+      ? "Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?"
+      : "Hello! I am your AI assistant. How can I help you today?";
 
-    const welcomeSnapshot: AIContext = {
-      ...storeSnapshot,
-      input: "",
-      output: welcomeMessage,
-      system: {
-        ...storeSnapshot.system,
-        currentDateTime: formatDateTime(new Date()),
-      },
-    };
+    const welcomeSnapshot: AIContext = { ...storeSnapshot, input: "", output: welcomeMessage,
+      system: { ...storeSnapshot.system, currentDateTime: formatDateTime(new Date()), bookingSystemEnabled: false },
+      form: { tripDeparture: "", tripDestination: "", dateTimeRoundTripDeparture: "", dateTimeRoundTripReturn: "", 
+        durationOfStayInDays: 0, travelMode: "", budget: 0, people: 0, starsOfHotel: 0, luggages: 0 }};
 
     updateAIContext(welcomeSnapshot);
-    setChatMessages([
-      {
-        id: "welcome",
-        type: "ai",
-        timestamp: new Date(),
-        aIContext: welcomeSnapshot,
-      },
-    ]);
-
+    setChatMessages([{ id: "welcome", type: "ai", timestamp: new Date(), aIContext: welcomeSnapshot }]);
+    
+    // Close dialogs and reset states
+    setShowBookingDialog(false);
+    setBookingContext(null);
     setShowReasoningPanel(false);
     setCurrentProcessingContext(undefined);
     setAiStatus(null);
-
     inputRef.current?.focus();
-    if (isDebugMode) appendDebugLog("Chat reset to welcome message.");
   }
 
   // -----------------------------
@@ -410,31 +461,10 @@ const Chat: React.FC = () => {
   const handleCloseReasoningPanel = () => {
     handleStopAI();
     setShowReasoningPanel(false);
-
-    const currentStoreContext = useAuthStore.getState().aIContext;
-    const resetForm = {
-      tripDeparture: currentStoreContext.form.tripDeparture,
-      tripDestination: "",
-      dateTimeRoundTripDeparture: "",
-      dateTimeRoundTripReturn: "",
-      durationOfStayInDays: 0,
-      travelMode: "",
-      budget: 0,
-      people: 0,
-      starsOfHotel: 0,
-      luggages: 0,
-    };
-
-    const resetSystem = currentStoreContext.system;
-    resetSystem.bookingSystemEnabled = false;
-
-    const updatedContext: AIContext = {
-      ...currentStoreContext,
-      form: resetForm,
-      system: resetSystem,
-    };
-
-    useAuthStore.getState().updateAIContext(updatedContext);
+    const context = useAuthStore.getState().aIContext;
+    const resetForm = { tripDeparture: context.form.tripDeparture, tripDestination: "", dateTimeRoundTripDeparture: "", 
+      dateTimeRoundTripReturn: "", durationOfStayInDays: 0, travelMode: "", budget: 0, people: 0, starsOfHotel: 0, luggages: 0 };
+    useAuthStore.getState().updateAIContext({ ...context, form: resetForm, system: { ...context.system, bookingSystemEnabled: false }});
   };
 
   // -----------------------------
@@ -476,6 +506,15 @@ const Chat: React.FC = () => {
         currentContext={currentProcessingContext}
         onClose={handleCloseReasoningPanel}
         aiStatus={aiStatus || ({} as AIStatus)}
+      />
+
+      <BookingConfirmDialog
+        isOpen={showBookingDialog}
+        bookingContext={bookingContext}
+        onConfirm={handleBookingConfirm}
+        onCancel={handleBookingCancel}
+        onModify={handleBookingModify}
+        onClose={handleBookingClose}
       />
     </div>
   );
