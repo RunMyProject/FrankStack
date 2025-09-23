@@ -9,12 +9,71 @@
  * - Modify booking (with input field)
  *
  * Author: Assistant (for Edoardo Sabatini)
- * Date: 21 September 2025
+ * Date: 23 September 2025
  */
-
 import React, { useState, useRef, useEffect } from 'react';
 import type { AIContext } from '../types/chat';
-import { formatDateTime } from '../utils/datetime';
+
+/**
+ * Emoji selector for transport
+ */
+const getTransportIcon = (mode?: string): string => {
+  if (!mode) return "—";
+  switch (mode.toLowerCase()) {
+    case "plane":
+    case "flight":
+    case "airplane":
+      return "✈️";
+    case "train":
+      return "🚆";
+    case "bus":
+      return "🚌";
+    case "car":
+      return "🚗";
+    case "ship":
+    case "boat":
+    case "ferry":
+      return "🛳️";
+    case "bike":
+    case "bicycle":
+      return "🚴‍♂️";
+    case "shuttle":
+    case "space shuttle":
+    case "spaceship":
+    case "rocket":
+    case "space":
+      return "🚀";
+    default:
+      return "❓";
+  }
+};
+
+/**
+ * Formats a date with 📅 and ⏰
+ */
+const formatElegantDate = (dateStr?: string) => {
+  if (!dateStr) return "—";
+  const d = new Date(dateStr);
+  const date = d.toLocaleDateString("it-IT", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+  const time = d.toLocaleTimeString("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  return `📅 ${date} ⏰ ${time}`;
+};
+
+/**
+ * Render emoji repetitions with cap + parentheses
+ */
+const renderWithIcons = (value: number, icon: string, maxReal: number): string => {
+  if (value <= 0) return "—";
+  const limited = Math.min(value, maxReal);
+  return limited > 3 ? `${icon.repeat(3)} (${limited})` : icon.repeat(limited);
+};
 
 interface BookingConfirmDialogProps {
   isOpen: boolean;
@@ -22,7 +81,7 @@ interface BookingConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   onModify: (modificationRequest: string) => void;
-  onClose?: () => void; // Optional simple close without any action
+  onClose?: () => void;
 }
 
 const BookingConfirmDialog: React.FC<BookingConfirmDialogProps> = ({
@@ -37,17 +96,14 @@ const BookingConfirmDialog: React.FC<BookingConfirmDialogProps> = ({
   const [modifyText, setModifyText] = useState('');
   const modifyInputRef = useRef<HTMLInputElement>(null);
 
-  // Get current language
   const isItalian = bookingContext?.system.userLang === 'Italian';
 
-  // Focus on modify input when shown
   useEffect(() => {
     if (showModifyInput && modifyInputRef.current) {
       modifyInputRef.current.focus();
     }
   }, [showModifyInput]);
 
-  // Reset state when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setShowModifyInput(false);
@@ -56,12 +112,9 @@ const BookingConfirmDialog: React.FC<BookingConfirmDialogProps> = ({
   }, [isOpen]);
 
   if (!isOpen || !bookingContext) return null;
-
   const { form } = bookingContext;
 
-  const handleModifyClick = () => {
-    setShowModifyInput(true);
-  };
+  const transportIcon = getTransportIcon(form.travelMode);
 
   const handleModifySubmit = () => {
     if (modifyText.trim()) {
@@ -73,118 +126,20 @@ const BookingConfirmDialog: React.FC<BookingConfirmDialogProps> = ({
   };
 
   const handleModifyKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleModifySubmit();
-    } else if (e.key === 'Escape') {
+    if (e.key === 'Enter') handleModifySubmit();
+    else if (e.key === 'Escape') {
       setShowModifyInput(false);
       setModifyText('');
     }
   };
 
-  // Booking summary content
-  const bookingSummary = isItalian ? (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Partenza:</span>
-        <span className="font-semibold">{form.tripDeparture}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Destinazione:</span>
-        <span className="font-semibold">{form.tripDestination}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Data andata:</span>
-        <span className="font-semibold">
-          {formatDateTime(new Date(form.dateTimeRoundTripDeparture))}
-        </span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Data ritorno:</span>
-        <span className="font-semibold">
-          {formatDateTime(new Date(form.dateTimeRoundTripReturn))}
-        </span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Durata (giorni):</span>
-        <span className="font-semibold">{form.durationOfStayInDays}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Mezzo di trasporto:</span>
-        <span className="font-semibold">{form.travelMode}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Budget:</span>
-        <span className="font-semibold">€{form.budget}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Persone:</span>
-        <span className="font-semibold">{form.people}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Stelle hotel:</span>
-        <span className="font-semibold">{form.starsOfHotel} ⭐</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Valigie:</span>
-        <span className="font-semibold">{form.luggages}</span>
-      </div>
-    </div>
-  ) : (
-    <div className="space-y-3">
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Departure:</span>
-        <span className="font-semibold">{form.tripDeparture}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Destination:</span>
-        <span className="font-semibold">{form.tripDestination}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Departure date:</span>
-        <span className="font-semibold">
-          {formatDateTime(new Date(form.dateTimeRoundTripDeparture))}
-        </span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Return date:</span>
-        <span className="font-semibold">
-          {formatDateTime(new Date(form.dateTimeRoundTripReturn))}
-        </span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Duration (days):</span>
-        <span className="font-semibold">{form.durationOfStayInDays}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Travel mode:</span>
-        <span className="font-semibold">{form.travelMode}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Budget:</span>
-        <span className="font-semibold">€{form.budget}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">People:</span>
-        <span className="font-semibold">{form.people}</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Hotel stars:</span>
-        <span className="font-semibold">{form.starsOfHotel} ⭐</span>
-      </div>
-      <div className="flex justify-between items-center">
-        <span className="text-gray-600">Luggages:</span>
-        <span className="font-semibold">{form.luggages}</span>
-      </div>
-    </div>
-  );
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[80vh] overflow-hidden animate-fadeIn">
         {/* Header */}
-        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white">
-          <h2 className="text-xl font-bold text-center">
-            {isItalian ? '✈️ Conferma Prenotazione' : '✈️ Confirm Booking'}
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white text-center">
+          <h2 className="text-xl font-bold">
+            {transportIcon} {isItalian ? "Conferma Prenotazione" : "Confirm Booking"}
           </h2>
         </div>
 
@@ -192,114 +147,75 @@ const BookingConfirmDialog: React.FC<BookingConfirmDialogProps> = ({
         <div className="p-6 max-h-96 overflow-y-auto">
           {!showModifyInput ? (
             <>
-              {/* Booking Summary */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  {isItalian ? 'Riepilogo Viaggio:' : 'Trip Summary:'}
-                </h3>
-                <div className="bg-gray-50 rounded-xl p-4">
-                  {bookingSummary}
-                </div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                {isItalian ? "Riepilogo Viaggio:" : "Trip Summary:"}
+              </h3>
+              <div className="grid grid-cols-2 gap-3 bg-gray-50 rounded-xl p-4 text-sm">
+                <div><span className="font-medium">{isItalian ? "Partenza" : "Departure"}:</span> {form.tripDeparture}</div>
+                <div><span className="font-medium">{isItalian ? "Destinazione" : "Destination"}:</span> {form.tripDestination}</div>
+                <div><span className="font-medium">{isItalian ? "Data andata" : "Departure Date"}:</span> {formatElegantDate(form.dateTimeRoundTripDeparture)}</div>
+                <div><span className="font-medium">{isItalian ? "Data ritorno" : "Return Date"}:</span> {formatElegantDate(form.dateTimeRoundTripReturn)}</div>
+                <div><span className="font-medium">{isItalian ? "Giorni" : "Days"}:</span> {form.durationOfStayInDays}</div>
+                <div><span className="font-medium">{isItalian ? "Trasporto" : "Transport"}:</span> {transportIcon}</div>
+                <div><span className="font-medium">Budget:</span> €{form.budget}</div>
+                <div><span className="font-medium">{isItalian ? "Persone" : "People"}:</span> {renderWithIcons(form.people, "👤", 10)}</div>
+                <div><span className="font-medium">{isItalian ? "Stelle Hotel" : "Hotel Stars"}:</span> {renderWithIcons(form.starsOfHotel, "⭐", 7)}</div>
+                <div><span className="font-medium">{isItalian ? "Bagagli" : "Luggages"}:</span> {renderWithIcons(form.luggages, "🧳", 10)}</div>
               </div>
 
-              {/* Confirmation Message */}
-              <div className="text-center mb-6">
+              <div className="text-center mt-6">
                 <p className="text-gray-700">
                   {isItalian 
-                    ? 'Confermi di voler procedere con questa prenotazione?' 
-                    : 'Do you want to proceed with this booking?'
-                  }
+                    ? "Confermi di voler procedere con questa prenotazione?" 
+                    : "Do you want to proceed with this booking?"}
                 </p>
               </div>
             </>
           ) : (
-            <>
-              {/* Modify Input Section */}
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800">
-                  {isItalian ? 'Modifica Prenotazione:' : 'Modify Booking:'}
-                </h3>
-                <div className="space-y-4">
-                  <input
-                    ref={modifyInputRef}
-                    type="text"
-                    value={modifyText}
-                    onChange={(e) => setModifyText(e.target.value)}
-                    onKeyDown={handleModifyKeyDown}
-                    placeholder={isItalian 
-                      ? 'Scrivi cosa vuoi modificare...' 
-                      : 'Write what you want to modify...'
-                    }
-                    className="w-full p-3 border-2 border-gray-200 rounded-xl outline-none focus:border-indigo-500 transition-colors"
-                  />
-                  <p className="text-sm text-gray-500">
-                    {isItalian 
-                      ? 'Premi Invio per inviare, Esc per annullare' 
-                      : 'Press Enter to send, Esc to cancel'
-                    }
-                  </p>
-                </div>
-              </div>
-            </>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800">
+                {isItalian ? "Modifica Prenotazione:" : "Modify Booking:"}
+              </h3>
+              <input
+                ref={modifyInputRef}
+                type="text"
+                value={modifyText}
+                onChange={(e) => setModifyText(e.target.value)}
+                onKeyDown={handleModifyKeyDown}
+                placeholder={isItalian ? "Scrivi cosa vuoi modificare..." : "Write what you want to modify..."}
+                className="w-full p-3 border-2 border-gray-200 rounded-xl outline-none focus:border-indigo-500 transition-colors"
+              />
+              <p className="text-sm text-gray-500 mt-2">
+                {isItalian ? "Premi Invio per inviare, Esc per annullare" : "Press Enter to send, Esc to cancel"}
+              </p>
+            </div>
           )}
         </div>
 
-        {/* Footer Buttons */}
+        {/* Footer */}
         <div className="border-t border-gray-200 p-6">
           {!showModifyInput ? (
             <div className="flex gap-2 justify-center flex-wrap">
-              {/* Confirm Button */}
-              <button
-                onClick={onConfirm}
-                className="px-5 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold text-sm"
-              >
-                {isItalian ? '✅ Prenota Pure!' : '✅ Book It!'}
+              <button onClick={onConfirm} className="px-5 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold text-sm">
+                {isItalian ? "✅ Prenota Pure!" : "✅ Book It!"}
               </button>
-
-              {/* Modify Button */}
-              <button
-                onClick={handleModifyClick}
-                className="px-5 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold text-sm"
-              >
-                {isItalian ? '✏️ Modifica' : '✏️ Modify'}
+              <button onClick={() => setShowModifyInput(true)} className="px-5 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold text-sm">
+                {isItalian ? "✏️ Modifica" : "✏️ Modify"}
               </button>
-
-              {/* Cancel Button */}
-              <button
-                onClick={onCancel}
-                className="px-5 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold text-sm"
-              >
-                {isItalian ? '❌ Ci Ho Ripensato' : '❌ Changed My Mind'}
+              <button onClick={onCancel} className="px-5 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold text-sm">
+                {isItalian ? "❌ Ci Ho Ripensato" : "❌ Changed My Mind"}
               </button>
-
-              {/* Simple Close Button (NEW) */}
-              <button
-                onClick={onClose || (() => {})}
-                className="px-5 py-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 hover:scale-105 transition-all font-semibold text-sm"
-              >
-                {isItalian ? '✖️ Annulla' : '✖️ Close'}
+              <button onClick={onClose || (() => {})} className="px-5 py-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 hover:scale-105 transition-all font-semibold text-sm">
+                {isItalian ? "✖️ Annulla" : "✖️ Close"}
               </button>
             </div>
           ) : (
             <div className="flex gap-3 justify-center">
-              {/* Send Modification */}
-              <button
-                onClick={handleModifySubmit}
-                disabled={!modifyText.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold disabled:opacity-50 disabled:hover:scale-100"
-              >
-                {isItalian ? 'Invia Modifica' : 'Send Modification'}
+              <button onClick={handleModifySubmit} disabled={!modifyText.trim()} className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-full hover:scale-105 hover:shadow-lg transition-all font-semibold disabled:opacity-50 disabled:hover:scale-100">
+                {isItalian ? "Invia Modifica" : "Send Modification"}
               </button>
-
-              {/* Cancel Modification */}
-              <button
-                onClick={() => {
-                  setShowModifyInput(false);
-                  setModifyText('');
-                }}
-                className="px-6 py-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 hover:scale-105 transition-all font-semibold"
-              >
-                {isItalian ? 'Annulla' : 'Cancel'}
+              <button onClick={() => { setShowModifyInput(false); setModifyText(""); }} className="px-6 py-3 bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 hover:scale-105 transition-all font-semibold">
+                {isItalian ? "Annulla" : "Cancel"}
               </button>
             </div>
           )}

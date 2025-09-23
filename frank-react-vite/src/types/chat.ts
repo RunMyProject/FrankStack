@@ -13,7 +13,7 @@
  *   - Location and weather data types
  *
  * Author: Edoardo Sabatini
- * Date: September 21, 2025
+ * Date: September 23, 2025
  */
 
 /**
@@ -126,4 +126,13 @@ export interface WeatherData {
   icon: string;   // Weather icon code
   desc: string;   // Weather description
   temp: number;   // Temperature in Celsius
+}
+
+/*
+ * process dialog / handleProcessComplete
+ */
+export interface ProcessResult {
+  message: string;
+  bookingDetails?: Record<string, unknown>;
+  selectedTransport?: string;
 }

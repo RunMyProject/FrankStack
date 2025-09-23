@@ -6,12 +6,48 @@
  * Status updates are tracked with a single object { msg, status }.
  *
  * Author: Edoardo Sabatini
- * Date: 21 September 2025
+ * Date: 23 September 2025
  */
+
+// ===========================================
+// 🧪 TEST MODE CONFIGURATION
+// ===========================================
+const ENABLE_TEST_MODE = false; // Set to false to disable test mode
+// ===========================================
+
+// ===========================================
+// 🧪 TEST DATA
+// ===========================================
+const TEST_BOOKING_DATA: AIContext = {
+  system: {
+    maxWords: 50,
+    user: "testUser",
+    userLang: "Italian",
+    aiName: "FrankStack AI Assistant",
+    currentDateTime: "24/09/2025 00:00",
+    weather: "Sunny",
+    temperatureWeather: 22,
+    bookingSystemEnabled: true
+  },
+  form: {
+    tripDeparture: "Milano",
+    tripDestination: "Parigi",
+    dateTimeRoundTripDeparture: "2025-09-24T00:00:00Z",
+    dateTimeRoundTripReturn: "2025-09-28T00:00:00Z",
+    durationOfStayInDays: 4,
+    travelMode: "train",
+    budget: 1000,
+    people: 1,
+    starsOfHotel: 3,
+    luggages: 2
+  },
+  input: "",
+  output: "🧪 Starting a booking test..."
+};
 
 // Base
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import type { ChatMessage, Provider, AIContext, AIStatus } from "../types/chat";
+import type { ChatMessage, Provider, AIContext, AIStatus, ProcessResult } from "../types/chat";
 
 // Components
 import Header from "../components/Header";
@@ -20,12 +56,14 @@ import InputBar from "../components/InputBar";
 import DebugPanel from "../components/DebugPanel";
 import ReasoningPanel from "../components/ReasoningPanel";
 import BookingConfirmDialog from "../components/BookingConfirmDialog";
+import BookingProcessDialog from "../components/BookingProcessDialog";
 
 // Miscellaneous
 import { useServerHealth } from "../hooks/useServerHealth";
 import { useAI } from "../hooks/useAI";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatDateTime } from "../utils/datetime";
+import { sagaManager } from "../utils/BookingSagaManager";
 
 const Chat: React.FC = () => {
   // -----------------------------
@@ -45,11 +83,19 @@ const Chat: React.FC = () => {
     AIContext | undefined
   >(undefined);
 
+  const [showProcessDialog, setShowProcessDialog] = useState(false);
+  const [sagaTransactionId, setSagaTransactionId] = useState<string | null>(null);
+
   // -----------------------------
   // Booking dialog state
   // -----------------------------
   const [showBookingDialog, setShowBookingDialog] = useState(false);
   const [bookingContext, setBookingContext] = useState<AIContext | null>(null);
+
+  // -----------------------------
+  // Test mode state
+  // -----------------------------
+  const [testModeActivated, setTestModeActivated] = useState(false);
 
   // -----------------------------
   // Refs
@@ -71,6 +117,129 @@ const Chat: React.FC = () => {
     const timestamp = new Date().toLocaleTimeString();
     setDebugLogs((prev) => [...prev, `[${timestamp}] ${message}`]);
   }, []);
+
+  // -----------------------------
+  // Test Mode Functions
+  // -----------------------------
+  const formatElegantDate = (dateStr?: string) => {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    const date = d.toLocaleDateString("it-IT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const time = d.toLocaleTimeString("it-IT", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `📅 ${date} ⏰ ${time}`;
+  };
+
+  const getTransportIcon = (mode?: string): string => {
+    if (!mode) return "—";
+    switch (mode.toLowerCase()) {
+      case "plane":
+      case "flight":
+      case "airplane":
+        return "✈️";
+      case "train":
+        return "🚆";
+      case "bus":
+        return "🚌";
+      case "car":
+        return "🚗";
+      default:
+        return "❓";
+    }
+  };
+
+  const renderWithIcons = (value: number, icon: string, maxReal: number): string => {
+    if (value <= 0) return "—";
+    const limited = Math.min(value, maxReal);
+    return limited > 3 ? `${icon.repeat(3)} (${limited})` : icon.repeat(limited);
+  };
+
+  const generateTestSummary = (context: AIContext): string => {
+    const { form } = context;
+    const transportIcon = getTransportIcon(form.travelMode);
+    
+    return `🧪 Avvio di test di prenotazione in corso...
+
+📋 Riepilogo Viaggio:
+• Partenza: ${form.tripDeparture}
+• Destinazione: ${form.tripDestination}
+• Data andata: ${formatElegantDate(form.dateTimeRoundTripDeparture)}
+• Data ritorno: ${formatElegantDate(form.dateTimeRoundTripReturn)}
+• Giorni: ${form.durationOfStayInDays}
+• Trasporto: ${transportIcon}
+• Budget: €${form.budget}
+• Persone: ${renderWithIcons(form.people, "👤", 10)}
+• Stelle Hotel: ${renderWithIcons(form.starsOfHotel, "⭐", 7)}
+• Bagagli: ${renderWithIcons(form.luggages, "🧳", 10)}
+
+🚀 Avvio del processo Saga...`;
+  };
+
+  const activateTestMode = useCallback((force: boolean) => {
+    if(!force) if (!ENABLE_TEST_MODE || testModeActivated) return;
+
+    console.log("🧪 Attivazione Test Mode");
+    setTestModeActivated(true);
+
+    // Update context with test data
+    const testContext: AIContext = {
+      ...TEST_BOOKING_DATA,
+      system: {
+        ...TEST_BOOKING_DATA.system,
+        currentDateTime: formatDateTime(new Date()),
+        userLang: userLang || "Italian"
+      },
+      output: generateTestSummary(TEST_BOOKING_DATA)
+    };
+
+    updateAIContext(testContext);
+
+    // Add test message to chat
+    const testMessage: ChatMessage = {
+      id: "test-booking-" + Date.now(),
+      type: "ai",
+      timestamp: new Date(),
+      aIContext: testContext
+    };
+
+    setChatMessages(prev => [...prev, testMessage]);
+
+    // Directly activate booking process dialog
+    setTimeout(() => {
+      setBookingContext(testContext);
+      setShowProcessDialog(true);
+      
+      // Start saga transaction
+      startTestSagaTransaction(testContext);
+    }, 1500); // Small delay to let user see the summary
+
+  }, [ENABLE_TEST_MODE, testModeActivated, userLang, updateAIContext]);
+
+  const startTestSagaTransaction = async (context: AIContext) => {
+    try {
+      console.log("🚀 Starting test saga transaction");
+      
+      const transactionId = await sagaManager.startSagaTransaction(
+        context,
+        (step: string, status: string, data?: unknown) => {
+          console.log(`🔄 Saga step update: ${step} -> ${status}`, data);
+        }
+      );
+      
+      setSagaTransactionId(transactionId);
+      appendDebugLog(`Test saga started with ID: ${transactionId}`);
+      
+    } catch (error) {
+      console.error('❌ Test saga transaction failed:', error);
+      appendDebugLog(`Test saga error: ${error}`);
+    }
+  };
 
   // -----------------------------
   // Type guard utility
@@ -186,7 +355,7 @@ const Chat: React.FC = () => {
   }, [chatMessages]);
 
   // -----------------------------
-  // Welcome message setup
+  // Welcome message setup + TEST MODE ACTIVATION
   // -----------------------------
   useEffect(() => {
     const currentLang = userLang ?? "EN";
@@ -218,12 +387,24 @@ const Chat: React.FC = () => {
         aIContext: welcomeSnapshot,
       },
     ]);
-  }, [userLang, updateAIContext]);
+
+    // 🧪 ACTIVATE TEST MODE AFTER WELCOME MESSAGE
+    if (ENABLE_TEST_MODE && !testModeActivated) {
+      setTimeout(activateTestMode, 2000); // 2 second delay after welcome
+    }
+  }, [userLang, updateAIContext, activateTestMode, testModeActivated]);
 
   // -----------------------------
   // Send message handler
   // -----------------------------
   async function handleSendMessage(passedText?: string): Promise<void> {
+    // Skip normal message handling if test mode is active
+    if (ENABLE_TEST_MODE) {
+      console.log("🧪 Test mode active - skipping normal message handling");
+      activateTestMode(true);
+      return;
+    }
+
     const storeSnapshot = useAuthStore.getState().aIContext;
     const questionText = (passedText ?? storeSnapshot.input ?? "").trim();
     if (!questionText) return;
@@ -320,18 +501,45 @@ const Chat: React.FC = () => {
   // -----------------------------
   // Booking dialog handlers
   // -----------------------------
-  const handleBookingConfirm = () => {
+  const handleBookingConfirm = async () => {
     if (!bookingContext) return;
-    const message = bookingContext.system.userLang === "Italian"
-      ? "🎉 Avvio prenotazione, attendere prego..." : "🎉 Booking process started, please wait...";
     
-    const snapshot: AIContext = { ...bookingContext, output: message, 
-      system: { ...bookingContext.system, bookingSystemEnabled: false }};
-    
-    updateAIContext(snapshot);
-    setChatMessages(prev => [...prev, { id: Date.now() + "_confirm", type: "ai", timestamp: new Date(), aIContext: snapshot }]);
     setShowBookingDialog(false);
-    setBookingContext(null);
+    setShowProcessDialog(true);
+    
+    try {
+      const transactionId = await sagaManager.startSagaTransaction(
+        bookingContext,
+        (step: string, status: string, data?: unknown) => {
+          // This callback will be handled by the BookingProcessDialog
+          console.log(`Saga step update: ${step} -> ${status}`, data);
+        }
+      );
+      
+      setSagaTransactionId(transactionId);
+      
+    } catch (error) {
+      console.error('Saga transaction failed:', error);
+      setShowProcessDialog(false);
+      
+      const errorMessage = bookingContext.system.userLang === "Italian"
+        ? `❌ Errore durante la prenotazione: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`
+        : `❌ Booking error: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      
+      const errorSnapshot: AIContext = { 
+        ...bookingContext, 
+        output: errorMessage,
+        system: { ...bookingContext.system, bookingSystemEnabled: false }
+      };
+      
+      updateAIContext(errorSnapshot);
+      setChatMessages(prev => [...prev, { 
+        id: Date.now() + "_error", 
+        type: "ai", 
+        timestamp: new Date(), 
+        aIContext: errorSnapshot 
+      }]);
+    }
   };
 
   const handleBookingCancel = () => {
@@ -366,39 +574,6 @@ const Chat: React.FC = () => {
   // -----------------------------
   // Helpers
   // -----------------------------
-  /*
-  function printFormSnapshot(aIContext: AIContext): string {
-    const { form, system } = aIContext;
-    if (system.userLang === "Italian") {
-      return `📋 Dati viaggio:
-    - Partenza: ${form.tripDeparture}
-    - Destinazione: ${form.tripDestination}
-    - Data andata: ${formatDateTime(new Date(form.dateTimeRoundTripDeparture))}
-    - Data ritorno: ${formatDateTime(new Date(form.dateTimeRoundTripReturn))}
-    - Durata soggiorno (giorni): ${form.durationOfStayInDays}
-    - Mezzo di trasporto: ${form.travelMode}
-    - Budget: ${form.budget}
-    - Persone: ${form.people}
-    - Stelle hotel: ${form.starsOfHotel}
-    - Valigie: ${form.luggages}`;
-    } else {
-      return `📋 Trip data:
-    - Departure: ${form.tripDeparture}
-    - Destination: ${form.tripDestination}
-    - Departure date: ${formatDateTime(
-      new Date(form.dateTimeRoundTripDeparture)
-    )}
-    - Return date: ${formatDateTime(new Date(form.dateTimeRoundTripReturn))}
-    - Duration (days): ${form.durationOfStayInDays}
-    - Travel mode: ${form.travelMode}
-    - Budget: ${form.budget}
-    - People: ${form.people}
-    - Hotel stars: ${form.starsOfHotel}
-    - Luggages: ${form.luggages}`;
-    }
-  }
-  */
- 
   function isFormComplete(aIContext: AIContext): boolean {
     const form = aIContext.form;
     const isNonEmptyString = (s: string | "") =>
@@ -416,32 +591,6 @@ const Chat: React.FC = () => {
       form.starsOfHotel > 0 &&
       form.luggages > 0
     );
-  }
-
-  // -----------------------------
-  // Chat reset
-  // -----------------------------
-  function handleClearChat() {
-    const storeSnapshot = useAuthStore.getState().aIContext;
-    const welcomeMessage = storeSnapshot.system.userLang === "Italian"
-      ? "Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?"
-      : "Hello! I am your AI assistant. How can I help you today?";
-
-    const welcomeSnapshot: AIContext = { ...storeSnapshot, input: "", output: welcomeMessage,
-      system: { ...storeSnapshot.system, currentDateTime: formatDateTime(new Date()), bookingSystemEnabled: false },
-      form: { tripDeparture: "", tripDestination: "", dateTimeRoundTripDeparture: "", dateTimeRoundTripReturn: "", 
-        durationOfStayInDays: 0, travelMode: "", budget: 0, people: 0, starsOfHotel: 0, luggages: 0 }};
-
-    updateAIContext(welcomeSnapshot);
-    setChatMessages([{ id: "welcome", type: "ai", timestamp: new Date(), aIContext: welcomeSnapshot }]);
-    
-    // Close dialogs and reset states
-    setShowBookingDialog(false);
-    setBookingContext(null);
-    setShowReasoningPanel(false);
-    setCurrentProcessingContext(undefined);
-    setAiStatus(null);
-    inputRef.current?.focus();
   }
 
   // -----------------------------
@@ -468,6 +617,140 @@ const Chat: React.FC = () => {
   };
 
   // -----------------------------
+  // process dialog handlers
+  // -----------------------------
+  const handleProcessComplete = (result: ProcessResult) => {
+    setSagaTransactionId(null);
+    
+    if (!bookingContext) return;
+    
+    const successMessage = result.message || (
+      bookingContext.system.userLang === "Italian" 
+        ? "🎉 Prenotazione completata con successo!" 
+        : "🎉 Booking completed successfully!"
+    );
+    
+    const successSnapshot: AIContext = { 
+      ...bookingContext, 
+      output: successMessage,
+      system: { ...bookingContext.system, bookingSystemEnabled: false }
+    };
+    
+    updateAIContext(successSnapshot);
+    setChatMessages(prev => [...prev, { 
+      id: Date.now() + "_success", 
+      type: "ai", 
+      timestamp: new Date(), 
+      aIContext: successSnapshot 
+    }]);
+  
+    // Reset form after successful booking
+    const resetForm = { 
+      tripDeparture: "", tripDestination: "", dateTimeRoundTripDeparture: "", 
+      dateTimeRoundTripReturn: "", durationOfStayInDays: 0, travelMode: "", 
+      budget: 0, people: 0, starsOfHotel: 0, luggages: 0 
+    };
+    
+    const finalSnapshot = { ...successSnapshot, form: resetForm };
+    updateAIContext(finalSnapshot);
+
+    // Close process dialog after completion
+    /*
+    setTimeout(() => {
+      setShowProcessDialog(false);
+    }, 3000);
+    */
+  };
+
+  const handleProcessError = (error: string) => {
+    // setShowProcessDialog(false);
+    setSagaTransactionId(null);
+    
+    if (!bookingContext) return;
+    
+    const errorMessage = bookingContext.system.userLang === "Italian"
+      ? `❌ Errore durante il processo: ${error}`
+      : `❌ Process error: ${error}`;
+    
+    const errorSnapshot: AIContext = { 
+      ...bookingContext, 
+      output: errorMessage,
+      system: { ...bookingContext.system, bookingSystemEnabled: false }
+    };
+    
+    updateAIContext(errorSnapshot);
+    setChatMessages(prev => [...prev, { 
+      id: Date.now() + "_process_error", 
+      type: "ai", 
+      timestamp: new Date(), 
+      aIContext: errorSnapshot 
+    }]);
+  };
+
+  const handleProcessClose = () => {
+    if (sagaTransactionId) {
+      sagaManager.cancelTransaction(sagaTransactionId);
+    }
+    
+    setShowProcessDialog(false);
+    setSagaTransactionId(null);
+    
+    if (!bookingContext) return;
+    
+    const cancelMessage = bookingContext.system.userLang === "Italian"
+      ? "❌ Processo di prenotazione interrotto."
+      : "❌ Booking process cancelled.";
+    
+    const cancelSnapshot: AIContext = { 
+      ...bookingContext, 
+      output: cancelMessage,
+      system: { ...bookingContext.system, bookingSystemEnabled: false }
+    };
+    
+    updateAIContext(cancelSnapshot);
+    setChatMessages(prev => [...prev, { 
+      id: Date.now() + "_process_cancel", 
+      type: "ai", 
+      timestamp: new Date(), 
+      aIContext: cancelSnapshot 
+    }]);
+  };
+
+  // -----------------------------
+  // Chat reset
+  // -----------------------------
+  function handleClearChat() {
+    const storeSnapshot = useAuthStore.getState().aIContext;
+    const welcomeMessage = storeSnapshot.system.userLang === "Italian"
+      ? "Ciao! Sono il tuo assistente AI. Come posso aiutarti oggi?"
+      : "Hello! I am your AI assistant. How can I help you today?";
+
+    const welcomeSnapshot: AIContext = { ...storeSnapshot, input: "", output: welcomeMessage,
+      system: { ...storeSnapshot.system, currentDateTime: formatDateTime(new Date()), bookingSystemEnabled: false },
+      form: { tripDeparture: "", tripDestination: "", dateTimeRoundTripDeparture: "", dateTimeRoundTripReturn: "", 
+        durationOfStayInDays: 0, travelMode: "", budget: 0, people: 0, starsOfHotel: 0, luggages: 0 }};
+
+    // Reset saga-related state
+    if (sagaTransactionId) {
+      sagaManager.cancelTransaction(sagaTransactionId);
+    }
+    setShowProcessDialog(false);
+    setSagaTransactionId(null);
+
+    updateAIContext(welcomeSnapshot);
+    setChatMessages([{ id: "welcome", type: "ai", timestamp: new Date(), aIContext: welcomeSnapshot }]);
+    
+    // Close dialogs and reset states
+    setShowBookingDialog(false);
+    setBookingContext(null);
+    setShowReasoningPanel(false);
+    setCurrentProcessingContext(undefined);
+    setAiStatus(null);
+    setTestModeActivated(false); // Reset test mode
+    inputRef.current?.focus();
+  }
+
+  // -----------------------------
   // Render
   // -----------------------------
   return (
@@ -482,6 +765,15 @@ const Chat: React.FC = () => {
           toggleDebug={() => setIsDebugMode(!isDebugMode)}
           debugMode={isDebugMode}
         />
+
+        {/* 🧪 Test Mode Indicator */}
+        {ENABLE_TEST_MODE && (
+          <div className="bg-yellow-100 border-b border-yellow-200 px-4 py-2 text-center">
+            <span className="text-sm text-yellow-800">
+              🧪 <strong>TEST MODE ACTIVE</strong> - Test booking will start automatically
+            </span>
+          </div>
+        )}
 
         <MessageList
           messages={chatMessages}
@@ -516,6 +808,15 @@ const Chat: React.FC = () => {
         onModify={handleBookingModify}
         onClose={handleBookingClose}
       />
+
+      <BookingProcessDialog
+        isOpen={showProcessDialog}
+        bookingContext={bookingContext}
+        onClose={handleProcessClose}
+        onComplete={handleProcessComplete}
+        onError={handleProcessError}
+      />
+
     </div>
   );
 };
