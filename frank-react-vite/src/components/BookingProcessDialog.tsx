@@ -22,6 +22,7 @@ import type { SagaStep } from './SagaStepRow';
 
 // copmonents
 import { SagaStepRow } from './SagaStepRow';
+import BookingSagaManager from '../utils/BookingSagaManager';
 
 interface BookingProcessDialogProps {
   isOpen: boolean;
@@ -105,7 +106,9 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
     try {
       // Step 1: Orchestrator initialization
       await processStep(0, 'orchestrator', async () => {
-        await simulateApiCall(800);
+        const sagaManager = new BookingSagaManager();
+        const result = await sagaManager.executeApi(bookingContext!); // Ottieni il risultato della chiamata
+        console.info("API Response:", JSON.stringify(result));
         return { orchestratorId: 'saga-' + Date.now() };
       });
 

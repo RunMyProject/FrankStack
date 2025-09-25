@@ -56,6 +56,52 @@ class BookingSagaManager {
   private transactions = new Map<string, SagaTransaction>();
   private stepCallbacks = new Map<string, (step: string, status: string, data?: unknown) => void>();
 
+  async executeApi(context: AIContext): Promise<SagaStepResult> {
+    const form = JSON.stringify(context.form);
+    console.log("API Context Form: " + form);
+
+    /*
+    try {
+      // API REST
+      const response = await fetch('http://localhost:8080/hello?word=world', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Errore API: ${response.status} - ${response.statusText}`);
+      }
+
+      const apiData = await response.json();
+
+      return {
+        success: true,
+        data: apiData
+      };
+    } catch (error) {
+      console.error("Errore durante la chiamata API:", error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Errore sconosciuto'
+      };
+    }
+    */
+
+    const apiData = {
+      message: "Hello World API Response",
+      timestamp: new Date().toISOString(),
+      status: "success"
+    };
+
+    return {
+      success: true,
+      data: apiData
+    };
+  }
+
+
   /**
    * Starts a new saga transaction
    */
