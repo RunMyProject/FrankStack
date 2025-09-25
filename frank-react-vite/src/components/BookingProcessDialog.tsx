@@ -12,22 +12,16 @@
  * for travel booking microservices orchestration
  *
  * Author: Edoardo Sabatini
- * Date: 23 September 2025
+ * Date: 25 September 2025
  */
-
 import React, { useEffect, useState } from 'react';
-import type { AIContext, ProcessResult } from '../types/chat';
 
-export interface SagaStep {
-  id: string;
-  name: string;
-  description: string;
-  status: 'pending' | 'processing' | 'completed' | 'error' | 'user_input_required';
-  errorMessage?: string;
-  data?: unknown;
-  requiresUserSelection?: boolean;
-  options?: Array<{ id: string; label: string; price?: number; details?: string; }>;
-}
+// types
+import type { AIContext, ProcessResult } from '../types/chat';
+import type { SagaStep } from './SagaStepRow';
+
+// copmonents
+import { SagaStepRow } from './SagaStepRow';
 
 interface BookingProcessDialogProps {
   isOpen: boolean;
@@ -56,14 +50,16 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
   useEffect(() => {
     if (!isOpen || !bookingContext) return;
     
-    const transportMode = bookingContext.form.travelMode?.toLowerCase();
+    // const transportMode = bookingContext.form.travelMode?.toLowerCase();
     const initialSteps: SagaStep[] = [
       {
         id: 'orchestrator',
         name: isItalian ? 'Orchestratore Saga' : 'Saga Orchestrator',
         description: isItalian ? 'Inizializzazione transazione distribuita' : 'Initializing distributed transaction',
         status: 'pending'
-      },
+      }
+      /*
+      ,
       {
         id: 'transport_search',
         name: getTransportServiceName(transportMode, isItalian),
@@ -90,6 +86,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
         description: isItalian ? 'Finalizzazione prenotazione' : 'Finalizing booking',
         status: 'pending'
       }
+      */
     ];
 
     setSteps(initialSteps);
@@ -104,7 +101,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
 
   const startSagaProcess = async (
     // initialSteps: SagaStep[]
-) => {
+  ) => {
     try {
       // Step 1: Orchestrator initialization
       await processStep(0, 'orchestrator', async () => {
@@ -112,6 +109,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
         return { orchestratorId: 'saga-' + Date.now() };
       });
 
+      /*
       // Step 2: Transport search
       await processStep(1, 'transport_search', async () => {
         await simulateApiCall(1500);
@@ -163,6 +161,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
           confirmationNumber: Math.random().toString(36).substr(2, 9).toUpperCase()
         };
       });
+      */
 
       // All steps completed successfully
       setIsProcessing(false);
@@ -276,20 +275,6 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
     }
   };
 
-  const getStepIcon = (step: SagaStep) => {
-    switch (step.status) {
-      case 'processing': return '⚙️';
-      case 'completed': return '✅';
-      case 'error': return '❌';
-      case 'user_input_required': return '👆';
-      default: return '⏳';
-    }
-  };
-
-  const getStepIconClass = (step: SagaStep) => {
-    return step.status === 'processing' ? 'animate-spin' : '';
-  };
-
   if (!isOpen) return null;
 
   return (
@@ -308,65 +293,15 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
         {/* Steps */}
         <div className="p-6 max-h-96 overflow-y-auto">
           {steps.map((step) => (
-            <div key={step.id} className={`mb-4 p-4 rounded-xl border-2 transition-all ${
-              step.status === 'processing' ? 'border-blue-300 bg-blue-50' :
-              step.status === 'completed' ? 'border-green-300 bg-green-50' :
-              step.status === 'error' ? 'border-red-300 bg-red-50' :
-              step.status === 'user_input_required' ? 'border-orange-300 bg-orange-50' :
-              'border-gray-200 bg-gray-50'
-            }`}>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="font-semibold text-sm text-gray-800">{step.name}</div>
-                  <div className="text-xs text-gray-600 mt-1">{step.description}</div>
-                  {step.errorMessage && (
-                    <div className="text-xs text-red-600 mt-2">❌ {step.errorMessage}</div>
-                  )}
-                </div>
-                <span className={`text-xl ml-3 ${getStepIconClass(step)}`}>
-                  {getStepIcon(step)}
-                </span>
-              </div>
-
-              {/* User Selection Interface */}
-              {step.requiresUserSelection && showUserSelection && step.options && (
-                <div className="mt-4 p-4 bg-white rounded-lg border">
-                  <h4 className="font-medium text-sm mb-3">
-                    {isItalian ? 'Seleziona un\'opzione:' : 'Select an option:'}
-                  </h4>
-                  <div className="space-y-2">
-                    {step.options.map((option) => (
-                      <label key={option.id} className="flex items-center p-2 hover:bg-gray-50 rounded cursor-pointer">
-                        <input
-                          type="radio"
-                          name="transport_option"
-                          value={option.id}
-                          checked={selectedOption === option.id}
-                          onChange={(e) => setSelectedOption(e.target.value)}
-                          className="mr-3"
-                        />
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{option.label}</div>
-                          {option.price && (
-                            <div className="text-xs text-green-600">€{option.price}</div>
-                          )}
-                          {option.details && (
-                            <div className="text-xs text-gray-500">{option.details}</div>
-                          )}
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                  <button
-                    onClick={handleUserSelection}
-                    disabled={!selectedOption}
-                    className="w-full mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isItalian ? 'Conferma Selezione' : 'Confirm Selection'}
-                  </button>
-                </div>
-              )}
-            </div>
+            <SagaStepRow
+              key={step.id}
+              step={step}
+              isItalian={isItalian}
+              showUserSelection={showUserSelection}
+              selectedOption={selectedOption}
+              setSelectedOption={setSelectedOption}
+              handleUserSelection={handleUserSelection}
+            />
           ))}
         </div>
 
@@ -395,6 +330,45 @@ const simulateApiCall = (delay: number): Promise<void> => {
   return new Promise(resolve => setTimeout(resolve, delay));
 };
 
+const generateMockTransportOptions = (mode: string | undefined, isItalian: boolean) => {
+  const baseOptions = [
+    {
+      id: 'option1',
+      label: isItalian ? 'Opzione Economica' : 'Economy Option',
+      price: 150,
+      details: isItalian ? 'Partenza 08:00 - 1 fermata' : 'Departure 08:00 - 1 stop'
+    },
+    {
+      id: 'option2', 
+      label: isItalian ? 'Opzione Standard' : 'Standard Option',
+      price: 280,
+      details: isItalian ? 'Partenza 14:30 - Diretto' : 'Departure 14:30 - Direct'
+    },
+    {
+      id: 'option3',
+      label: isItalian ? 'Opzione Premium' : 'Premium Option', 
+      price: 450,
+      details: isItalian ? 'Partenza 16:00 - Servizi extra' : 'Departure 16:00 - Extra services'
+    }
+  ];
+
+  console.log("BookingProcessDialog: generateMockTransportOptions" + mode);
+
+  return baseOptions;
+};
+
+const generateMockHotelOptions = (stars: number, isItalian: boolean) => {
+  return [
+    {
+      id: 'hotel1',
+      label: isItalian ? `Hotel ${stars} Stelle - Centro` : `${stars} Star Hotel - City Center`,
+      price: stars * 80,
+      details: isItalian ? 'Colazione inclusa' : 'Breakfast included'
+    }
+  ];
+};
+
+/*
 const getTransportServiceName = (mode: string | undefined, isItalian: boolean): string => {
   if (!mode) return isItalian ? 'Servizio Trasporto' : 'Transport Service';
   
@@ -432,43 +406,6 @@ const getTransportType = (mode: string | undefined, isItalian: boolean): string 
       return isItalian ? 'trasporti' : 'transport';
   }
 };
-
-const generateMockTransportOptions = (mode: string | undefined, isItalian: boolean) => {
-  const baseOptions = [
-    {
-      id: 'option1',
-      label: isItalian ? 'Opzione Economica' : 'Economy Option',
-      price: 150,
-      details: isItalian ? 'Partenza 08:00 - 1 fermata' : 'Departure 08:00 - 1 stop'
-    },
-    {
-      id: 'option2', 
-      label: isItalian ? 'Opzione Standard' : 'Standard Option',
-      price: 280,
-      details: isItalian ? 'Partenza 14:30 - Diretto' : 'Departure 14:30 - Direct'
-    },
-    {
-      id: 'option3',
-      label: isItalian ? 'Opzione Premium' : 'Premium Option', 
-      price: 450,
-      details: isItalian ? 'Partenza 16:00 - Servizi extra' : 'Departure 16:00 - Extra services'
-    }
-  ];
-
-console.log("BookingProcessDialog: generateMockTransportOptions" + mode);
-
-  return baseOptions;
-};
-
-const generateMockHotelOptions = (stars: number, isItalian: boolean) => {
-  return [
-    {
-      id: 'hotel1',
-      label: isItalian ? `Hotel ${stars} Stelle - Centro` : `${stars} Star Hotel - City Center`,
-      price: stars * 80,
-      details: isItalian ? 'Colazione inclusa' : 'Breakfast included'
-    }
-  ];
-};
+*/
 
 export default BookingProcessDialog;

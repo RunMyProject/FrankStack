@@ -18,7 +18,7 @@
  * - Real-time status updates
  *
  * Author: Edoardo Sabatini
- * Date: 23 September 2025
+ * Date: 25 September 2025
  */
 
 import type { AIContext } from '../types/chat';
@@ -95,11 +95,13 @@ class BookingSagaManager {
   //  context: AIContext
   ): string[] {
     return [
-      'orchestrator_init',
+      'orchestrator_init'
+/*    ,
       'transport_search',
       'accommodation_search', 
       'payment_processing',
       'booking_confirmation'
+*/      
     ];
   }
 
@@ -227,7 +229,7 @@ class BookingSagaManager {
    * Orchestrator initialization step
    */
   private async executeOrchestratorInit(context: AIContext): Promise<SagaStepResult> {
-    await this.simulateApiCall('orchestrator', 800);
+    await this.simulateApiCall('orchestrator');
     
     const orchestratorData = {
       sagaId: `saga-${Date.now()}`,
@@ -250,7 +252,7 @@ class BookingSagaManager {
    * Transport search microservice call
    */
   private async executeTransportSearch(context: AIContext): Promise<SagaStepResult> {
-    await this.simulateApiCall('transport-service', 1500);
+    await this.simulateApiCall('transport-service');
 
     // Simulate API response - sometimes requires user selection
     const hasDirectAvailability = Math.random() > 0.3; // 70% success rate
@@ -279,7 +281,7 @@ class BookingSagaManager {
    * Hotel booking microservice call
    */
   private async executeAccommodationSearch(context: AIContext): Promise<SagaStepResult> {
-    await this.simulateApiCall('hotel-service', 1200);
+    await this.simulateApiCall('hotel-service');
 
     // Simulate hotel availability check
     const hasAvailability = Math.random() > 0.1; // 90% success rate
@@ -310,7 +312,7 @@ class BookingSagaManager {
    * Payment processing microservice
    */
   private async executePaymentProcessing(context: AIContext): Promise<SagaStepResult> {
-    await this.simulateApiCall('payment-gateway', 2000);
+    await this.simulateApiCall('payment-gateway');
 
     // Simulate bank validation
     const paymentApproved = Math.random() > 0.1; // 90% success rate
@@ -340,7 +342,7 @@ class BookingSagaManager {
    * Final booking confirmation step
    */
   private async executeBookingConfirmation(context: AIContext): Promise<SagaStepResult> {
-    await this.simulateApiCall('booking-service', 1000);
+    await this.simulateApiCall('booking-service');
 
     return {
       success: true,
@@ -402,22 +404,22 @@ class BookingSagaManager {
 
     switch (stepId) {
       case 'transport_search':
-        await this.simulateApiCall('transport-service-cancel', 500);
+        await this.simulateApiCall('transport-service-cancel');
         console.log(isItalian ? 'Trasporto cancellato' : 'Transport cancelled');
         break;
         
       case 'accommodation_search':
-        await this.simulateApiCall('hotel-service-cancel', 500);
+        await this.simulateApiCall('hotel-service-cancel');
         console.log(isItalian ? 'Hotel cancellato' : 'Hotel cancelled');
         break;
         
       case 'payment_processing':
-        await this.simulateApiCall('payment-refund', 1000);
+        await this.simulateApiCall('payment-refund');
         console.log(isItalian ? 'Rimborso elaborato' : 'Refund processed');
         break;
         
       case 'booking_confirmation':
-        await this.simulateApiCall('booking-cancel', 300);
+        await this.simulateApiCall('booking-cancel');
         console.log(isItalian ? 'Prenotazione cancellata' : 'Booking cancelled');
         break;
         
@@ -471,13 +473,13 @@ class BookingSagaManager {
   /**
    * Simulate API call with network delay
    */
-  private async simulateApiCall(serviceName: string, delay: number): Promise<void> {
+  private async simulateApiCall(serviceName: string): Promise<void> {
     console.log(`📡 Calling ${serviceName}...`);
-    
+    // , delay: number
     // Simulate network variability
-    const actualDelay = delay + (Math.random() * 500) - 250;
+    // const actualDelay = delay + (Math.random() * 500) - 250;
     
-    await this.delay(Math.max(100, actualDelay));
+    // await this.delay(Math.max(100, actualDelay));
     
     // Simulate occasional network errors (5% chance)
     /*
@@ -546,8 +548,7 @@ class BookingSagaManager {
   }
 
   /**
-   * Get retry configuration for failed steps
-   */
+   * Get retry configuration for failed steps   
   private getRetryConfig(stepId: string): { maxRetries: number; delay: number } {
     const configs: Record<string, { maxRetries: number; delay: number }> = {
       'transport_search': { maxRetries: 3, delay: 1000 },
@@ -558,10 +559,10 @@ class BookingSagaManager {
 
     return configs[stepId] || { maxRetries: 1, delay: 1000 };
   }
+  */
 
   /**
-   * Execute step with retry logic
-   */
+   * Execute step with retry logic   
   private async executeStepWithRetry(stepId: string, transaction: SagaTransaction): Promise<SagaStepResult> {
     const { maxRetries, delay } = this.getRetryConfig(stepId);
     let lastError: Error | null = null;
@@ -590,6 +591,7 @@ class BookingSagaManager {
       error: lastError?.message || `Failed after ${maxRetries + 1} attempts`
     };
   }
+  */
 }
 
 // Singleton instance
