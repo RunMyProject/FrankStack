@@ -1,5 +1,218 @@
 /**
  * BookingProcessDialog.tsx
+ * Saga Pattern Visualization Dialog (SSE Version)
+ * -----------------------
+ * Uses Server-Sent Events (SSE) to stream saga step updates
+ * in real-time from the orchestrator backend.
+ * 
+ * Features:
+ * - Real-time saga step visualization with SSE
+ * - Multi-language support (Italian/English)
+ * - Automatic state management with proper reset
+ * - Compensation transaction ready architecture
+ * - Responsive UI with gradient styling
+ * - Progress tracking with step completion counter
+ * 
+ * Implementation Notes:
+ * - Uses EventSource for server-sent events
+ * - Full state reset on dialog close/open
+ * - Handles connection errors gracefully
+ * - Supports distributed transaction rollback scenarios
+ *
+ * Author: Edoardo Sabatini  
+ * Date: 29 September 2025
+ */
+
+import React, { useEffect, useState } from 'react';
+import type { AIContext, ProcessResult } from '../types/chat';
+import type { SagaStep } from './SagaStepRow';
+import { SagaStepRow } from './SagaStepRow';
+
+interface BookingProcessDialogProps {
+  isOpen: boolean;
+  bookingContext: AIContext | null;
+  onClose: () => void;
+  onComplete: (result: ProcessResult) => void;
+  onError: (error: string) => void;
+}
+
+const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
+  isOpen,
+  bookingContext,
+  onClose,
+  onComplete,
+  onError
+}) => {
+  const [steps, setSteps] = useState<SagaStep[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [hasCompleted, setHasCompleted] = useState(false);
+
+  const isItalian = bookingContext?.system.userLang === 'Italian';
+
+  // 🔄 RESET EFFECT: Reset all states when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setSteps([]);
+      setIsProcessing(false);
+      setHasCompleted(false);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Don't start if dialog is closed, no context, or already completed
+    if (!isOpen || !bookingContext || hasCompleted) return;
+
+    const initialSteps: SagaStep[] = [
+      {
+        id: 'service-a',
+        name: isItalian ? 'Orchestratore Saga' : 'Saga Orchestrator',
+        description: isItalian ? 'Inizializzazione transazione distribuita' : 'Initializing distributed transaction',
+        status: 'pending'
+      },
+      {
+        id: 'service-b',
+        name: isItalian ? 'Servizio Trasporti' : 'Transport Service',
+        description: isItalian ? 'Elaborazione prenotazione trasporti' : 'Processing transport booking',
+        status: 'pending'
+      },
+      {
+        id: 'service-c',
+        name: isItalian ? 'Servizio Alloggi' : 'Accommodation Service',
+        description: isItalian ? 'Elaborazione prenotazione hotel' : 'Processing hotel booking',
+        status: 'pending'
+      }
+    ];
+
+    setSteps(initialSteps);
+    setIsProcessing(true);
+
+    // 🎯 SSE IMPLEMENTATION: Real-time updates from saga orchestrator
+    const es = new EventSource('http://localhost:8080/hello?word=world');
+
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { message, status } = data;
+
+        // 🏁 COMPLETION HANDLER: Finalize process
+        if (status === 'completed') {
+          setHasCompleted(true);
+          setIsProcessing(false);
+          es.close();
+          setTimeout(() => {
+            onComplete({
+              message: isItalian
+                ? '🎉 Prenotazione completata con successo!'
+                : '🎉 Booking completed successfully!',
+              bookingDetails: {}
+            });
+          }, 500);
+          return;
+        }
+
+        // ❌ ERROR HANDLER: Graceful error management
+        if (status === 'error') {
+          setIsProcessing(false);
+          es.close();
+          onError(message || 'Errore durante l\'elaborazione');
+          return;
+        }
+
+        // 🔄 STEP UPDATER: Map SSE messages to saga steps
+        let targetId: string | null = null;
+        if (message.includes('Service A')) targetId = 'service-a';
+        else if (message.includes('Service B')) targetId = 'service-b';
+        else if (message.includes('Service C')) targetId = 'service-c';
+
+        if (!targetId) return;
+
+        setSteps(prev =>
+          prev.map(step =>
+            step.id === targetId
+              ? { ...step, status: 'completed', data }
+              : step
+          )
+        );
+
+      } catch (parseError) {
+        console.error('Errore parsing SSE:', parseError);
+      }
+    };
+
+    // 🔌 CONNECTION ERROR HANDLER: Robust error recovery
+    es.onerror = () => {
+      console.error('Errore connessione SSE');
+      setIsProcessing(false);
+      if (es.readyState !== EventSource.CLOSED) {
+        es.close();
+      }
+      onError('Connessione al server interrotta');
+    };
+
+    // 🧹 CLEANUP: Proper resource management
+    return () => {
+      if (es.readyState !== EventSource.CLOSED) {
+        es.close();
+      }
+    };
+  }, [isOpen, bookingContext, isItalian, onComplete, onError, hasCompleted]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+        {/* 🎨 GRADIENT HEADER: Visual appeal with brand colors */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
+          <h2 className="text-xl font-bold">
+            🔄 {isItalian ? 'Elaborazione Saga' : 'Saga Processing'}
+          </h2>
+          <p className="text-sm opacity-90 mt-1">
+            {isItalian ? 'Transazione Distribuita in Corso' : 'Distributed Transaction in Progress'}
+          </p>
+        </div>
+
+        {/* 📊 PROGRESS VISUALIZATION: Real-time step status */}
+        <div className="p-6 max-h-96 overflow-y-auto">
+          {steps.map((step) => (
+            <SagaStepRow
+              key={step.id}
+              step={step}
+              isItalian={isItalian}
+              showUserSelection={false}
+              selectedOption=""
+              setSelectedOption={() => {}}
+              handleUserSelection={() => {}}
+            />
+          ))}
+        </div>
+
+        {/* 📈 PROGRESS FOOTER: Completion metrics and controls */}
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
+          <div className="flex justify-between items-center">
+            <div className="text-sm text-gray-600">
+              {isItalian
+                ? `Passi completati: ${steps.filter(s => s.status === 'completed').length} / ${steps.length}`
+                : `Completed steps: ${steps.filter(s => s.status === 'completed').length} / ${steps.length}`}
+            </div>
+            <button
+              onClick={onClose}
+              disabled={isProcessing}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+            >
+              {isItalian ? 'Annulla' : 'Cancel'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BookingProcessDialog;
+
+/**
+ * BookingProcessDialog.tsx
  * Saga Pattern Visualization Dialog
  * -----------------------
  * Shows the booking process steps with visual feedback:
@@ -13,7 +226,7 @@
  *
  * Author: Edoardo Sabatini
  * Date: 25 September 2025
- */
+ *
 import React, { useEffect, useState } from 'react';
 
 // types
@@ -87,7 +300,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
         description: isItalian ? 'Finalizzazione prenotazione' : 'Finalizing booking',
         status: 'pending'
       }
-      */
+      *
     ];
 
     setSteps(initialSteps);
@@ -164,8 +377,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
           confirmationNumber: Math.random().toString(36).substr(2, 9).toUpperCase()
         };
       });
-      */
-
+      *
       // All steps completed successfully
       setIsProcessing(false);
       setTimeout(() => {
@@ -283,7 +495,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden">
-        {/* Header */}
+        {/* Header 
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white text-center">
           <h2 className="text-xl font-bold">
             🔄 {isItalian ? 'Elaborazione Saga' : 'Saga Processing'}
@@ -293,7 +505,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
           </p>
         </div>
 
-        {/* Steps */}
+        {/* Steps 
         <div className="p-6 max-h-96 overflow-y-auto">
           {steps.map((step) => (
             <SagaStepRow
@@ -308,7 +520,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
           ))}
         </div>
 
-        {/* Footer */}
+        {/* Footer 
         <div className="border-t border-gray-200 p-4 bg-gray-50">
           <div className="flex justify-between items-center">
             <div className="text-sm text-gray-600">
@@ -409,6 +621,6 @@ const getTransportType = (mode: string | undefined, isItalian: boolean): string 
       return isItalian ? 'trasporti' : 'transport';
   }
 };
+export default BookingProcessDialog;
 */
 
-export default BookingProcessDialog;

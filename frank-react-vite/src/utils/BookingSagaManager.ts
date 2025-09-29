@@ -58,6 +58,52 @@ class BookingSagaManager {
 
   async executeApi(context: AIContext): Promise<SagaStepResult> {
     const form = JSON.stringify(context.form);
+    console.log("API Context Form:", form);
+
+    return new Promise<SagaStepResult>((resolve) => {
+      const es = new EventSource("http://localhost:8080/hello?word=world");
+
+      es.onmessage = (event) => {
+        console.log("RAW SSE DATA:", event.data);
+        let serverData: { message?: string; timestamp?: string; status?: string };
+        try {
+          serverData = JSON.parse(event.data);
+        } catch (e) {
+          console.warn("Non era JSON:", e);
+          serverData = { message: event.data };
+        }
+
+        const { message = "no message", timestamp = new Date().toISOString(), status = "success" } = serverData;
+
+        console.log("EXTRACTED MESSAGE:", message);
+        console.log("EXTRACTED TIMESTAMP:", timestamp);
+        console.log("EXTRACTED STATUS:", status);
+        console.log("-----------");
+
+        // ✅ Risolvi SOLO quando arriva l'evento finale
+        if (status === "completed") {
+          resolve({
+            success: true,
+            data: { message, timestamp, status }
+          });
+          es.close(); // Ora possiamo chiudere
+        }
+        // Altrimenti: continua ad ascoltare (non fare nulla)
+      };
+
+      es.onerror = (err) => {
+        console.error("Errore SSE:", err);
+        es.close();
+        resolve({
+          success: false,
+          error: "Errore SSE"
+        });
+      };
+    });
+  }
+
+  async executeApi_old(context: AIContext): Promise<SagaStepResult> {
+    const form = JSON.stringify(context.form);
     console.log("API Context Form: " + form);
 
     try {
@@ -87,6 +133,7 @@ class BookingSagaManager {
       };
     }
 
+    
 /*
     const apiData = {
       message: "Hello World API Response",
