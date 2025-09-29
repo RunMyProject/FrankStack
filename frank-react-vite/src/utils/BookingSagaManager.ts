@@ -18,7 +18,7 @@
  * - Real-time status updates
  *
  * Author: Edoardo Sabatini
- * Date: 25 September 2025
+ * Date: 29 September 2025
  */
 
 import type { AIContext } from '../types/chat';
@@ -60,7 +60,6 @@ class BookingSagaManager {
     const form = JSON.stringify(context.form);
     console.log("API Context Form: " + form);
 
-    /*
     try {
       // API REST
       const response = await fetch('http://localhost:8080/hello?word=world', {
@@ -87,8 +86,8 @@ class BookingSagaManager {
         error: error instanceof Error ? error.message : 'Errore sconosciuto'
       };
     }
-    */
 
+/*
     const apiData = {
       message: "Hello World API Response",
       timestamp: new Date().toISOString(),
@@ -99,6 +98,8 @@ class BookingSagaManager {
       success: true,
       data: apiData
     };
+*/
+
   }
 
 
