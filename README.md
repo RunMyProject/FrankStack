@@ -1,5 +1,64 @@
 # FrankStack
 
+*Updated: 30 September 2025*
+
+---
+
+## 👋 Greetings & Apology
+
+First of all, apologies to all HRs and colleagues for the delay in updates. I was unwell and had to deal with some personal health issues.
+
+**Greetings of this evening and happy Autumn (Fall)! 🍂**
+
+---
+
+## 🏁 Milestone Epilogue
+
+Today marks a significant milestone in the **FrankStack journey**. After starting the Gemma AI integration with Ollama, we have begun implementing the **backend booking process** in Spring Boot. The journey is just beginning, and we are embarking on a **very ambitious and long path** toward a full end-to-end travel AI assistant.
+
+---
+
+## ✨ Recent Additions
+
+- **Hazelcast storage**: in-memory data storage for saga management
+- **CORS configuration** for **WebFlux Reactive** applications
+- **API Gateway**: routes requests to microservices efficiently
+- **Server-Sent Events (SSE)**: implemented for **two-phase saga pattern**
+  - Step 1: `POST` to create saga and store context in Hazelcast
+  - Step 2: `GET /stream` retrieves JSON results from in-memory DB
+- ✅ Note: Redis was **not used** to reduce memory footprint and avoid heavy configuration
+- Project currently expects **at least 8 shells open**:
+  1. Ollama
+  2. Node.js server
+  3. React/Vite client
+  4. API Gateway
+  5. Orchestrator SSE microservice
+  6. Kubernetes / Kafka
+  7. Search & Booking microservice
+  8. Payment microservice
+
+> This is the **current structure**, which may evolve during development. 🙏
+
+---
+
+## 🛠 Instructions for Developers
+
+1. Start **Frank API Gateway**: `frank-spring/frank-api-gateway`
+2. Start **Frank Orchestrator**: `frank-spring/frank-orchestrator`
+3. Launch **Ollama**, setting environment variables for external models
+4. Start **Frank Node Server**
+5. Start **Frank React Vite Client**
+
+**Notes:**
+- Works on NVIDIA 2070 with 8 GB GPU, but can be tight
+- CUDA must be configured locally; otherwise CPU overload may occur
+- VLLM and llama.cpp are avoided due to library conflicts on my Ubuntu
+- Full test scenario example:
+  `"I want a business trip to Paris! Budget 1000, 2 people, departure tomorrow morning, return next Monday, 2 suitcases, travel by train, 4-star hotel."`
+- Configured for **Gemma 9B model**; may hit overhead or timeout if GPU/RAM is limited. Start with simple phrases like `"Hi!"` or `"I want to go to Paris!"`
+
+---
+
 *Updated: 6 September 2025*
 
 ## 🎉 Today's Progress (short)
