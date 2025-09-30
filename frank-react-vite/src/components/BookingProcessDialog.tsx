@@ -20,7 +20,7 @@
  * - Supports distributed transaction rollback scenarios
  *
  * Author: Edoardo Sabatini  
- * Date: 29 September 2025
+ * Date: 30 September 2025
  */
 
 import React, { useEffect, useState } from 'react';
@@ -87,7 +87,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
     setIsProcessing(true);
 
     // 🎯 SSE IMPLEMENTATION: Real-time updates from saga orchestrator
-    const es = new EventSource('http://localhost:8080/hello?word=world');
+    const es = new EventSource('http://localhost:8081/hello?word=world');
 
     es.onmessage = (event) => {
       try {

@@ -1,0 +1,46 @@
+# application.yml
+# Spring Boot application configuration
+# -----------------------
+# Minimal configuration for Frank-API-Gateway microservice (30 September 2025)
+# 
+# NOTES:
+# - Reactive web application type is required for Spring Cloud Gateway
+# - Basic routing is configured for hello, orchestrator, and SSE services
+# - StripPrefix filter used as example for path modification
+# - Autoconfigure.exclude removed as keys are now correct
+#
+# Author: Edoardo Sabatini
+# Date: 30 September 2025
+
+# Server configuration
+server:
+  port: 8081
+
+spring:
+  application:
+    name: frank-api-gateway
+  main:
+    web-application-type: reactive # Required for Spring Cloud Gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: hello-endpoint
+              uri: http://localhost:8080
+              predicates:
+                - Path=/hello
+
+            - id: orchestrator-service
+              uri: http://localhost:8080
+              predicates:
+                - Path=/orchestrator/**
+              filters:
+                - StripPrefix=1 # Example of basic filter
+
+            - id: hello-sse-service
+              uri: http://localhost:8080
+              predicates:
+                - Path=/sse/**
+              filters:
+                - StripPrefix=1 # Example of basic filter
