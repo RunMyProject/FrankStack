@@ -1,148 +1,174 @@
 /**
  * OrchestratorSSE.java
- * Saga Pattern SSE Orchestrator Controller
+ * Saga Pattern SSE Orchestrator with Hazelcast Storage
  * -----------------------
- * Spring Boot REST controller that implements Server-Sent Events (SSE)
- * for real-time saga pattern orchestration simulation.
- * 
- * Simulates distributed transaction processing across microservices:
- * - Service A: Saga Orchestrator initialization
- * - Service B: Transport booking service
- * - Service C: Accommodation booking service
+ * Two-step approach:
+ * 1. POST /frankorchestrator → Creates saga, stores in Hazelcast, returns ID
+ * 2. GET /frankorchestrator/{sagaId}/stream → Executes saga with SSE updates
  * 
  * Features:
- * - Async microservice chain execution with CompletableFuture
- * - Real-time progress updates via SSE
- * - Configurable service delays for realistic simulation
- * - Comprehensive error handling and logging
- * - Automatic completion event after all services
- * 
- * Endpoint:
- * GET /hello?word=world - Streams saga execution events in real-time
+ * - Stateless orchestration with Hazelcast distributed storage
+ * - Real-time SSE streaming for saga execution
+ * - Clean separation: storage vs execution
+ * - Prints full JSON context during execution
  * 
  * Author: Edoardo Sabatini
- * Date: 29 September 2025
+ * Date: 30 September 2025
  */
 
 package com.frankstack.frankorchestrator.controller;
 
+import com.frankstack.frankorchestrator.service.SagaStorageService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadLocalRandom;
 
 @RestController
+@RequestMapping("/frankorchestrator")
 public class OrchestratorSSE {
 
+    @Autowired
+    private SagaStorageService sagaStorage;
+
     /**
-     * SSE endpoint for saga pattern orchestration simulation
-     * Streams real-time updates as services complete processing
+     * POST: Creates saga and stores booking context in Hazelcast
      * 
-     * @param word Trigger parameter for the orchestration process
-     * @return SseEmitter that streams service completion events
+     * @param requestBody JSON booking context
+     * @return Saga ID for subsequent streaming
      */
-    @GetMapping(value = "/hello", params = "word", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter streamUpdates(@RequestParam String word) {
-        System.out.println("🚀 [SERVER] SSE request received! Parameter word = '" + word + "'");
-        System.out.println("⏳ [SERVER] Creating new SseEmitter with 60 second timeout...");
+    @PostMapping
+    public ResponseEntity<Map<String, String>> createSaga(@RequestBody Map<String, Object> requestBody) {
+        System.out.println("🚀 [POST] Creating new saga...");
+        System.out.println("📦 [POST] Received booking context: " + requestBody);
+        
+        String sagaId = sagaStorage.createSaga(requestBody);
+        
+        System.out.println("✅ [POST] Saga created with ID: " + sagaId);
+        
+        return ResponseEntity.ok(Map.of(
+            "sagaId", sagaId,
+            "message", "Saga created successfully",
+            "streamUrl", "/frankorchestrator/" + sagaId + "/stream"
+        ));
+    }
+
+    /**
+     * GET SSE: Executes saga and streams real-time updates
+     * 
+     * @param sagaId Saga identifier from POST request
+     * @return SseEmitter streaming saga execution events
+     */
+    @GetMapping(value = "/{sagaId}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamSagaExecution(@PathVariable String sagaId) {
+        System.out.println("🌊 [SSE] Stream requested for saga: " + sagaId);
+        
+        // 🔍 VALIDATE: Check if saga exists
+        if (!sagaStorage.exists(sagaId)) {
+            System.err.println("❌ [SSE] Saga not found: " + sagaId);
+            SseEmitter emitter = new SseEmitter(60_000L);
+            try {
+                emitter.send(SseEmitter.event()
+                    .data(Map.of(
+                        "message", "Saga not found",
+                        "status", "error",
+                        "sagaId", sagaId
+                    ))
+                    .build());
+                emitter.complete();
+            } catch (IOException e) {
+                emitter.completeWithError(e);
+            }
+            return emitter;
+        }
+
+        // 📦 RETRIEVE: Get booking context from Hazelcast
+        Map<String, Object> bookingContext = sagaStorage.getSaga(sagaId);
+        System.out.println("📋 [SSE] Retrieved booking context for saga " + sagaId + ":");
+        System.out.println("🔍 [SSE] FULL JSON: " + bookingContext);
 
         SseEmitter emitter = new SseEmitter(60_000L);
 
-        System.out.println("🌀 [SERVER] Starting microservices chain in background...");
-
-        // 🎯 SAGA ORCHESTRATION: Execute services sequentially with CompletableFuture chain
-        CompletableFuture.runAsync(() -> sendUpdate(emitter, "Service A", "success"))
-            .thenRun(() -> sendUpdate(emitter, "Service B", "success"))
-            .thenRun(() -> sendUpdate(emitter, "Service C", "success"))
+        // 🎯 SAGA EXECUTION: Process services with context
+        CompletableFuture.runAsync(() -> sendUpdate(emitter, "Service A", "success", bookingContext))
+            .thenRun(() -> sendUpdate(emitter, "Service B", "success", bookingContext))
+            .thenRun(() -> sendUpdate(emitter, "Service C", "success", bookingContext))
             .thenRun(() -> {
-                System.out.println("✅ [SERVER] All microservices completed! Sending final event...");
+                System.out.println("✅ [SSE] All services completed for saga: " + sagaId);
                 try {
-                    // 🏁 FINAL COMPLETION: Send success event when all services complete
                     emitter.send(SseEmitter.event()
                         .data(Map.of(
                             "message", "All services completed ✅",
                             "status", "completed",
-                            "timestamp", Instant.now().toString()
+                            "timestamp", Instant.now().toString(),
+                            "sagaId", sagaId
                         ))
                         .build());
-                    System.out.println("📤 [SERVER] Final event sent successfully!");
                     emitter.complete();
-                    System.out.println("🏁 [SERVER] SseEmitter completed successfully.");
+                    
+                    // 🗑️ CLEANUP: Remove saga after completion (optional)
+                    // sagaStorage.deleteSaga(sagaId);
+                    
                 } catch (IOException e) {
-                    System.err.println("💥 [SERVER] ERROR sending final event: " + e.getMessage());
+                    System.err.println("💥 [SSE] Error sending completion: " + e.getMessage());
                     emitter.completeWithError(e);
                 }
             })
             .exceptionally(throwable -> {
-                // ❌ ERROR HANDLING: Handle exceptions in the CompletableFuture chain
-                System.err.println("🔥 [SERVER] Exception in CompletableFuture chain: " + throwable.getMessage());
+                System.err.println("🔥 [SSE] Exception in saga execution: " + throwable.getMessage());
                 emitter.completeWithError(throwable);
                 return null;
             });
 
-        System.out.println("📥 [SERVER] Returning emitter to client...");
         return emitter;
     }
 
     /**
-     * Simulates microservice processing and sends SSE update
-     * 
-     * @param emitter SSE emitter for sending events to client
-     * @param serviceName Name of the microservice being processed
-     * @param status Processing status ("success" or "error")
+     * Simulates service processing with booking context
      */
-    private void sendUpdate(SseEmitter emitter, String serviceName, String status) {
-        System.out.println("🛠️ [SERVER] Starting processing for " + serviceName + "...");
+    private void sendUpdate(SseEmitter emitter, String serviceName, String status, Map<String, Object> context) {
+        System.out.println("🛠️ [SERVICE] Processing " + serviceName + "...");
+        System.out.println("📦 [SERVICE] Using context: " + context);
+        
         try {
-            // ⏱️ SERVICE DELAY: Simulate processing time (configurable)
-            // int delay = ThreadLocalRandom.current().nextInt(3000, 10000); // Random delay
-            int delay = 1000; // Fixed 1-second delay for testing
-            System.out.println("⏱️ [SERVER] " + serviceName + " will wait " + delay + " ms...");
-            Thread.sleep(delay);
-
-            String message = serviceName + " completed";
-            Map<String, String> eventData = Map.of(
-                "message", message,
+            Thread.sleep(1000); // Simulate processing
+            
+            Map<String, Object> eventData = Map.of(
+                "message", serviceName + " completed",
                 "status", status,
-                "timestamp", Instant.now().toString()
+                "timestamp", Instant.now().toString(),
+                "service", serviceName
             );
 
-            System.out.println("📤 [SERVER] Sending event for " + serviceName + ": " + eventData);
-
-            // 📡 SSE EVENT: Send service completion update to client
+            System.out.println("📤 [SERVICE] Sending event: " + eventData);
+            
             emitter.send(SseEmitter.event()
                 .data(eventData)
                 .build());
-
-            System.out.println("✔️ [SERVER] Event for " + serviceName + " sent successfully!");
+                
+            System.out.println("✔️ [SERVICE] " + serviceName + " event sent!");
 
         } catch (InterruptedException e) {
-            // 🚨 INTERRUPTION: Handle thread interruption gracefully
             Thread.currentThread().interrupt();
-            System.err.println("⚠️ [SERVER] " + serviceName + " was interrupted!");
+            System.err.println("⚠️ [SERVICE] " + serviceName + " interrupted");
             sendError(emitter, serviceName + " interrupted");
         } catch (IOException e) {
-            // 🔌 CONNECTION ERROR: Handle SSE connection issues
-            System.err.println("❌ [SERVER] I/O error while sending for " + serviceName + ": " + e.getMessage());
-            sendError(emitter, serviceName + " failed ❌");
+            System.err.println("❌ [SERVICE] I/O error: " + e.getMessage());
+            sendError(emitter, serviceName + " failed");
         }
     }
 
     /**
-     * Sends error event via SSE when service processing fails
-     * 
-     * @param emitter SSE emitter for sending error events
-     * @param errorMsg Descriptive error message
+     * Sends error event via SSE
      */
     private void sendError(SseEmitter emitter, String errorMsg) {
-        System.out.println("🚨 [SERVER] Sending error message: " + errorMsg);
+        System.out.println("🚨 [ERROR] " + errorMsg);
         try {
             emitter.send(SseEmitter.event()
                 .data(Map.of(
@@ -151,10 +177,32 @@ public class OrchestratorSSE {
                     "timestamp", Instant.now().toString()
                 ))
                 .build());
-            System.out.println("📤 [SERVER] Error message sent.");
         } catch (IOException e) {
-            System.err.println("💥 [SERVER] Cannot send error: " + e.getMessage());
+            System.err.println("💥 [ERROR] Cannot send error: " + e.getMessage());
             emitter.completeWithError(e);
         }
+    }
+
+    /**
+     * LEGACY: Old GET endpoint with query param (kept for compatibility)
+     */
+    @GetMapping(value = "/hello", params = "word", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter legacyHelloWorld(@RequestParam String word) {
+        System.out.println("🔧 [LEGACY] Hello world called with: " + word);
+        SseEmitter emitter = new SseEmitter(60_000L);
+        
+        CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(1000);
+                emitter.send(SseEmitter.event()
+                    .data(Map.of("message", "Hello " + word, "status", "completed"))
+                    .build());
+                emitter.complete();
+            } catch (Exception e) {
+                emitter.completeWithError(e);
+            }
+        });
+        
+        return emitter;
     }
 }

@@ -3,13 +3,14 @@
  * -----------------------
  * Main Spring Boot Application for FrankStack Orchestrator
  * 
- * Features:
- * - Scans controller package for REST endpoints
- * - Configures CORS for React dev server
+ * NOTES:
+ * - Scans the controller package for REST endpoints
+ * - CORS configuration is handled by API Gateway proxy
  * - Entry point for Spring Boot application
- * 
+ * - To test React calls directly without API Gateway, uncomment the CORS bean below
+ *
  * Author: Edoardo Sabatini
- * Date: 29 September 2025
+ * Date: 30 September 2025
  */
 
 package com.frankspring.frankorchestrator;
@@ -20,7 +21,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@SpringBootApplication(scanBasePackages = "com.frankstack.frankorchestrator.controller")
+@SpringBootApplication(scanBasePackages = "com.frankstack.frankorchestrator")
 public class FrankOrchestratorApplication {
 
     public static void main(String[] args) {
@@ -28,8 +29,11 @@ public class FrankOrchestratorApplication {
     }
 
     /**
-     * Configure CORS to allow calls from React dev server
-     */
+     * NB: CORS configuration moved to API Gateway proxy.
+     * -----------------------------------------------------------------
+     * Uncomment the following bean to enable CORS directly for testing React
+     * calls without going through the API Gateway.
+     *
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
@@ -42,4 +46,5 @@ public class FrankOrchestratorApplication {
             }
         };
     }
+    */
 }

@@ -1,12 +1,12 @@
 # application.yml
 # Spring Boot application configuration
 # -----------------------
-# Minimal configuration for Frank-API-Gateway microservice (30 September 2025)
-# 
+# Minimal configuration for Frank-API-Gateway microservice 
+#
 # NOTES:
 # - Reactive web application type is required for Spring Cloud Gateway
 # - Basic routing is configured for hello, orchestrator, and SSE services
-# - StripPrefix filter used as example for path modification
+# - StripPrefix filter used as an example for path modification
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
@@ -31,16 +31,27 @@ spring:
               predicates:
                 - Path=/hello
 
-            - id: orchestrator-service
-              uri: http://localhost:8080
-              predicates:
-                - Path=/orchestrator/**
-              filters:
-                - StripPrefix=1 # Example of basic filter
+            # The following route does not work because:
+            # - the backend uses /frankorchestrator, not /orchestrator
+            # - StripPrefix=1 breaks the dynamic path
+            # - therefore it is commented out
+            # - id: orchestrator-service
+            #   uri: http://localhost:8080
+            #   predicates:
+            #     - Path=/orchestrator/**
+            #   filters:
+            #     - StripPrefix=1 # Example of a basic filter
 
-            - id: hello-sse-service
+            # The following route is not used by the new controller
+            # - id: hello-sse-service
+            #   uri: http://localhost:8080
+            #   predicates:
+            #     - Path=/sse/**
+            #   filters:
+            #     - StripPrefix=1 # Example of a basic filter
+
+            # ✅ NEW ACTIVE ROUTE for the new endpoint
+            - id: frank-orchestrator
               uri: http://localhost:8080
               predicates:
-                - Path=/sse/**
-              filters:
-                - StripPrefix=1 # Example of basic filter
+                - Path=/frankorchestrator/**
