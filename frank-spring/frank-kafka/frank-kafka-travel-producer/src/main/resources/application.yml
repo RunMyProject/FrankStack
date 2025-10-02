@@ -1,0 +1,39 @@
+# application.yml
+# -----------------------
+# Spring Boot application configuration
+# -----------------------
+# Application properties for Frank-Kafka-Travel-Producer microservice.
+#
+# Responsibilities:
+# - Produce travel booking events (search, trip details, reservations) into Kafka topics
+# - Acts as entry point for the travel saga
+# - Other microservices (hotel, payment) will consume these messages
+#
+# NOTES:
+# - Currently using default values.
+# - Future adjustments may include:
+#     • Profiles (dev, prod, test)
+#     • Server port, host, logging levels
+#     • Database connections
+#     • External service endpoints
+#
+# Author: Edoardo Sabatini
+# Date: 02 October 2025
+
+spring:
+  application:
+    name: frank-kafka-travel-producer
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: frank-kafka-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8082

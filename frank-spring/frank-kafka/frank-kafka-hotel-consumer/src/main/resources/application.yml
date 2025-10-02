@@ -1,0 +1,40 @@
+# application.yml
+# -----------------------
+# Spring Boot application configuration
+# -----------------------
+# Application configuration for Frank-Kafka-Hotel-Consumer microservice.
+#
+# Responsibilities:
+# - Consume hotel booking events from Kafka topics
+# - Listen to messages produced by other services (travel, payment)
+# - Handle hotel-specific business logic (availability checks, reservation confirmation, updates)
+# - Expose REST endpoints for monitoring and interaction
+#
+# NOTES:
+# - Currently using default values.
+# - Future adjustments may include:
+#     • Profiles (dev, prod, test)
+#     • Server port, host, logging levels
+#     • Database connections
+#     • External service endpoints
+#
+# Author: Edoardo Sabatini
+# Date: 02 October 2025
+
+spring:
+  application:
+    name: frank-kafka-hotel-consumer
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: frank-kafka-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+server:
+  port: 8087

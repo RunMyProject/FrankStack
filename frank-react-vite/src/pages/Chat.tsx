@@ -12,7 +12,7 @@
 // ===========================================
 // 🧪 TEST MODE CONFIGURATION
 // ===========================================
-const ENABLE_TEST_MODE = false; // Set to false to disable test mode
+const ENABLE_TEST_MODE = true; // Set to false to disable test mode
 // ===========================================
 
 // ===========================================
