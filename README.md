@@ -1,6 +1,6 @@
 # FrankStack
 
-*📅 Update October 3, 2025 — Sequential Call Table*
+*📅 Update 3 October 2025 — Sequential Call Table*
 
 ## 🙏 Apologies for the delay, the project is very complex!
 
@@ -12,6 +12,7 @@
 | 4️⃣  | Kafka + Redpanda              | `frank-ops`                                            | `./startkafka.sh`                                                                | Verify Docker images (`docker images`) before starting.                               |
 | 5️⃣  | Java + Spring Travel Producer | `frank-spring/frank-kafka/frank-kafka-travel-producer` | `mvn spring-boot:run`                                                            | Produces Kafka events for the booking flow.                                           |
 | 6️⃣  | Java + Spring Travel Consumer | `frank-spring/frank-kafka/frank-kafka-travel-consumer` | `mvn spring-boot:run`                                                            | Consumes Kafka events, updates saga in Hazelcast, and sends SSE to front-end.         |
+| 7️⃣  | Front-End React / Vite | `frank-react-vite`  | `npm install && npm run dev` | First time: install dependencies. Then open browser at the URL provided by Vite. Say hi to FrankStack AI to test connections, then try phrases like `"I want to go to Paris!"` to verify end-to-end pipeline. |
 
 ### Operational Notes:
 
@@ -20,6 +21,42 @@
 - This order ensures Node.js, Spring API Gateway, and Ollama are ready before triggering Kafka and the booking saga.
 - Paths are relative to the root ~/Java/FrankStack/.
 - This table serves as a daily operational reminder to run the full AI + orchestration booking pipeline end-to-end.
+
+---
+
+### FrankStack AI Quick Test Scenario
+
+### ⚡ Prerequisites
+- NVIDIA GPU with **8 GB VRAM** (if your machine allows)  
+- **CUDA drivers** installed locally
+
+### Step 1: Start Small
+
+Test your system with a simple input to verify connections:
+
+    "I want a business trip to Paris!"
+
+Then add details as separate inputs, for example:
+
+    "departure tomorrow, return next Monday,"
+
+### Step 2: Full Scenario (if machine can handle it)
+
+Execute the full request in one go:
+
+    "I want a business trip to Paris! Budget 1000€, 2 people, departure tomorrow, return next Monday, 2 suitcases, travel by train, 4-star hotel."
+
+> Tip: Start small to ensure the AI responds without timeouts, then use the full scenario if your system is powerful enough.
+
+---
+
+**Expected Behavior:**  
+
+- SSE streaming shows real-time updates of saga execution  
+- Booking context stored in Hazelcast and retrieved correctly  
+- Node.js server communicates with Ollama AI backend  
+- React front-end receives structured JSON response  
+- AI returns a complete travel plan matching user request
 
 ---
 
