@@ -21,7 +21,7 @@
  * Built for demonstrating Kafka-based microservices communication with saga orchestration.
  *
  * Author: Edoardo Sabatini
- * Date: 02 October 2025
+ * Date: 03 October 2025
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -63,7 +63,6 @@
 			<groupId>org.springframework.kafka</groupId>
 			<artifactId>spring-kafka</artifactId>
 		</dependency>
-
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>

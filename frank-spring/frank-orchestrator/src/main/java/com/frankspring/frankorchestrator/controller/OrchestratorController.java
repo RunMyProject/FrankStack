@@ -1,5 +1,5 @@
 /**
- * Orchestrator.java
+ * OrchestratorController.java
  * REST Controller for FrankStack Orchestrator API
  * -----------------------
  * Provides REST endpoints for FrankStack microservices orchestration
@@ -27,7 +27,7 @@
  * }
  * 
  * Author: Edoardo Sabatini
- * Date: 29 September 2025
+ * Date: 03 October 2025
  */
 
 package com.frankstack.frankorchestrator.controller;
@@ -41,7 +41,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestController
-public class Orchestrator {
+public class OrchestratorController {
 
     /**
      * Test endpoint for API connectivity and health checks

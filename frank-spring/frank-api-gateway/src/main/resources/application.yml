@@ -1,7 +1,7 @@
-# application.yml
-# Spring Boot application configuration
+# 🌐 Frank API Gateway Configuration
 # -----------------------
-# Minimal configuration for Frank-API-Gateway microservice 
+# Spring Boot application configuration
+# Minimal configuration for Frank-API-Gateway microservice
 #
 # NOTES:
 # - Reactive web application type is required for Spring Cloud Gateway
@@ -10,48 +10,57 @@
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
-# Date: 30 September 2025
+# Date: 03 October 2025
 
-# Server configuration
+# 🖥️ Server configuration
 server:
-  port: 8081
+  port: 8081  # ✅ Gateway listening port
 
 spring:
   application:
     name: frank-api-gateway
   main:
-    web-application-type: reactive # Required for Spring Cloud Gateway
+    web-application-type: reactive # 🔄 Required for Spring Cloud Gateway
+
   cloud:
     gateway:
       server:
         webflux:
           routes:
+
+            # 👋 Hello Endpoint
             - id: hello-endpoint
               uri: http://localhost:8080
               predicates:
                 - Path=/hello
+              # ✅ Maps /hello requests to backend service
 
-            # The following route does not work because:
-            # - the backend uses /frankorchestrator, not /orchestrator
-            # - StripPrefix=1 breaks the dynamic path
-            # - therefore it is commented out
+            # ⚠️ Old orchestrator route commented out
             # - id: orchestrator-service
             #   uri: http://localhost:8080
             #   predicates:
             #     - Path=/orchestrator/**
             #   filters:
-            #     - StripPrefix=1 # Example of a basic filter
+            #     - StripPrefix=1 # Example only, breaks dynamic paths
 
-            # The following route is not used by the new controller
+            # ⚠️ Old SSE route commented out
             # - id: hello-sse-service
             #   uri: http://localhost:8080
             #   predicates:
             #     - Path=/sse/**
             #   filters:
-            #     - StripPrefix=1 # Example of a basic filter
+            #     - StripPrefix=1 # Example only, not used
 
-            # ✅ NEW ACTIVE ROUTE for the new endpoint
+            # ✅ NEW ACTIVE ROUTE for orchestrator
             - id: frank-orchestrator
               uri: http://localhost:8080
               predicates:
                 - Path=/frankorchestrator/**
+              # 🌊 Handles saga creation and SSE streaming
+
+            # ✅ Kafka Producer route (internal)
+            - id: kafka-producer
+              uri: http://localhost:8082
+              predicates:
+                - Path=/send/**
+              # 📨 Internal route for Kafka Producer service, not called directly by frontend

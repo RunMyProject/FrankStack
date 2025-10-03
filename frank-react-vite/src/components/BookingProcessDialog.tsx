@@ -1,22 +1,33 @@
 /**
  * BookingProcessDialog.tsx
- * Two-Step Saga Pattern with Hazelcast Storage
  * -----------------------
- * Step 1: POST to create saga and store in Hazelcast
- * Step 2: GET SSE to stream execution in real-time
- * 
- * Flow:
- * 1. POST /frankorchestrator → Get sagaId
- * 2. EventSource GET /frankorchestrator/{sagaId}/stream → Receive updates
- * 
- * Features:
- * - Clean separation of storage and execution
- * - Uses EventSource for SSE (supports GET)
- * - Real-time progress visualization
- * - Multi-language support
+ * React Component implementing a Two-Step Saga Pattern with Hazelcast storage.
  *
- * Author: Edoardo Sabatini
- * Date: 30 September 2025
+ * SAGA OVERVIEW:
+ * - Step 1: POST /frankorchestrator
+ *     - Creates a new saga and stores the booking context in Hazelcast.
+ *     - Receives a unique sagaId used for subsequent tracking.
+ * - Step 2: GET SSE /frankorchestrator/{sagaId}/stream
+ *     - Connects via EventSource to stream real-time saga execution events.
+ *     - Receives status updates for each step in the distributed transaction.
+ *
+ * FLOW:
+ * 1. User opens BookingProcessDialog → POST request sent to create saga.
+ * 2. Backend responds with sagaId → EventSource connects to SSE endpoint.
+ * 3. Backend emits messages:
+ *    - "Saga processing started" → Orchestrator marked complete, first service processing.
+ *    - "CONFIRMED" or "completed" → Saga successfully completed, onComplete callback triggered.
+ *    - "error" or "FAILED" → Saga failed, onError callback triggered.
+ *
+ * FEATURES:
+ * - Separation of storage and execution concerns.
+ * - Real-time updates using SSE and EventSource.
+ * - Multi-step visualization using SagaStepRow components.
+ * - Supports cancel/close with proper cleanup of EventSource.
+ * - Internationalization support (English / Italian).
+ *
+ * AUTHOR: Edoardo Sabatini
+ * DATE: 03 October 2025
  */
 
 import React, { useEffect, useState } from 'react';
@@ -39,9 +50,10 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
   onComplete,
   onError
 }) => {
-  const isPROXY = true; // Set to true if using a proxy
+  const isPROXY = true; // If true, route through API gateway
   const urlProxy =  isPROXY ? "http://localhost:8081/frankorchestrator" : "http://localhost:8080/frankorchestrator";
 
+  // State for visual steps
   const [steps, setSteps] = useState<SagaStep[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [hasCompleted, setHasCompleted] = useState(false);
@@ -49,54 +61,59 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
 
   const isItalian = bookingContext?.system.userLang === 'Italian';
 
-  // 🔄 RESET EFFECT
+  // Initial step definitions
+  const initialSteps: SagaStep[] = [
+    {
+      id: 'service-a',
+      name: isItalian ? 'Saga Orchestrator' : 'Saga Orchestrator',
+      description: isItalian ? 'Initializing distributed transaction' : 'Initializing distributed transaction',
+      status: 'pending'
+    },
+    {
+      id: 'service-b',
+      name: isItalian ? 'Transport Service' : 'Transport Service',
+      description: isItalian ? 'Processing transport booking' : 'Processing transport booking',
+      status: 'pending'
+    },
+    {
+      id: 'service-c',
+      name: isItalian ? 'Accommodation Service' : 'Accommodation Service',
+      description: isItalian ? 'Processing hotel booking' : 'Processing hotel booking',
+      status: 'pending'
+    }
+  ];
+
+  // Reset state when modal closes
   useEffect(() => {
     if (!isOpen) {
-      setSteps([]);
+      setSteps(initialSteps);
       setIsProcessing(false);
       setHasCompleted(false);
       setSagaId(null);
+    } else {
+      setSteps(initialSteps);
     }
   }, [isOpen]);
 
+  // Main Saga Execution Effect
   useEffect(() => {
-    if (!isOpen || !bookingContext || hasCompleted) return;
-
-    const initialSteps: SagaStep[] = [
-      {
-        id: 'service-a',
-        name: isItalian ? 'Saga Orchestrator' : 'Saga Orchestrator',
-        description: isItalian ? 'Initializing distributed transaction' : 'Initializing distributed transaction',
-        status: 'pending'
-      },
-      {
-        id: 'service-b',
-        name: isItalian ? 'Transport Service' : 'Transport Service',
-        description: isItalian ? 'Processing transport booking' : 'Processing transport booking',
-        status: 'pending'
-      },
-      {
-        id: 'service-c',
-        name: isItalian ? 'Accommodation Service' : 'Accommodation Service',
-        description: isItalian ? 'Processing hotel booking' : 'Processing hotel booking',
-        status: 'pending'
-      }
-    ];
-
-    setSteps(initialSteps);
+    // Prevent double execution
+    if (!isOpen || !bookingContext || hasCompleted || sagaId !== null) return;
+    
     setIsProcessing(true);
 
-    // 🎯 STEP 1: POST - Create saga in Hazelcast
+    // Async function to create saga and connect to SSE
     const createAndStreamSaga = async () => {
       try {
         console.log('📤 [POST] Creating saga with context:', bookingContext);
 
+        // Step 1: Create saga
         const postResponse = await fetch(urlProxy, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          credentials: 'include', // allowCredentials(true)
+          credentials: 'include',
           body: JSON.stringify(bookingContext)
         });
 
@@ -108,26 +125,37 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
         console.log('✅ [POST] Saga created with ID:', receivedSagaId);
         setSagaId(receivedSagaId);
 
-        // 🎯 STEP 2: GET SSE - Stream saga execution
+        // Step 2: Connect to SSE stream
         console.log('🌊 [SSE] Connecting to stream:', receivedSagaId);
         const eventSource = new EventSource(urlProxy + `/${receivedSagaId}/stream`);
 
+        // Handle messages from backend
         eventSource.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
             const { message, status } = data;
 
             console.log('📥 [SSE] Received:', data);
-
-            // 🏁 COMPLETION HANDLER
-            if (status === 'completed') {
+            
+            // Completion handling
+            if (status === 'completed' || status === 'CONFIRMED') {
+              setSteps(prev => 
+                prev.map(step => 
+                  step.id === 'service-b' 
+                    ? { ...step, status: 'completed', data: data } 
+                    : step
+                )
+              );
+              
               setHasCompleted(true);
               setIsProcessing(false);
               eventSource.close();
+
+              // Call onComplete after short delay for visual update
               setTimeout(() => {
                 onComplete({
                   message: isItalian
-                    ? '🎉 Booking completed successfully!'  // Always English now
+                    ? '🎉 Booking completed successfully!'
                     : '🎉 Booking completed successfully!',
                   bookingDetails: { sagaId: receivedSagaId }
                 });
@@ -135,28 +163,27 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
               return;
             }
 
-            // ❌ ERROR HANDLER
-            if (status === 'error') {
+            // Error handling
+            if (status === 'error' || status === 'FAILED') {
               setIsProcessing(false);
               eventSource.close();
               onError(message || 'Error during processing');
               return;
             }
 
-            // 🔄 STEP UPDATER
-            let targetId: string | null = null;
-            if (message.includes('Service A')) targetId = 'service-a';
-            else if (message.includes('Service B')) targetId = 'service-b';
-            else if (message.includes('Service C')) targetId = 'service-c';
-
-            if (targetId) {
-              setSteps(prev =>
-                prev.map(step =>
-                  step.id === targetId
-                    ? { ...step, status: 'completed', data }
-                    : step
-                )
-              );
+            // Update intermediate steps
+            if (message.includes('Saga processing started') && status === 'processing') {
+                setSteps(prev =>
+                    prev.map(step => {
+                        if (step.id === 'service-a') {
+                            return { ...step, status: 'completed', data };
+                        }
+                        if (step.id === 'service-b') {
+                            return { ...step, status: 'processing', data };
+                        }
+                        return step;
+                    })
+                );
             }
 
           } catch (parseError) {
@@ -164,14 +191,21 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
           }
         };
 
+        // SSE error handling
         eventSource.onerror = (error) => {
           console.error('❌ [SSE] Connection error:', error);
+          
+          if (eventSource.readyState === EventSource.CLOSED && hasCompleted) {
+            console.log('✅ [SSE] Stream closed normally after completion');
+            return;
+          }
+          
           setIsProcessing(false);
           eventSource.close();
           onError('Server connection interrupted');
         };
 
-        // 🧹 CLEANUP
+        // Cleanup on unmount or modal close
         return () => {
           if (eventSource.readyState !== EventSource.CLOSED) {
             eventSource.close();
@@ -191,7 +225,7 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
 
     createAndStreamSaga();
 
-  }, [isOpen, bookingContext, isItalian, onComplete, onError, hasCompleted]);
+  }, [isOpen, bookingContext, isItalian, onComplete, onError, hasCompleted, sagaId]);
 
   if (!isOpen) return null;
 
