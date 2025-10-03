@@ -1,5 +1,28 @@
 # FrankStack
 
+*📅 Update October 3, 2025 — Sequential Call Table*
+
+## 🙏 Apologies for the delay, the project is very complex!
+
+| Step | Terminal / Shell              | Directory / Project                                    | Command                                                                          | Notes                                                                                 |
+| ---- | ----------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 1️⃣  | Ollama + Gemma Model          | `frank-ops`                                            | `export OLLAMA_MODELS=/media/edoardo/data2/ollama_models/models && ollama serve` | Make sure `gemma2:9b-instruct-q4_0` is fully downloaded (registry, blobs, manifests). |
+| 2️⃣  | Node.js WebSocket AI Server   | `frank-node-server`                                    | `node ws_ai_server.js`                                                           | Node backend that handles communication between React and AI.                         |
+| 3️⃣  | Java + Spring API Gateway     | `frank-api-gateway`                                    | `mvn spring-boot:run`                                                            | Check Maven and Java versions (`mvn -v` and `java -version`).                         |
+| 4️⃣  | Kafka + Redpanda              | `frank-ops`                                            | `./startkafka.sh`                                                                | Verify Docker images (`docker images`) before starting.                               |
+| 5️⃣  | Java + Spring Travel Producer | `frank-spring/frank-kafka/frank-kafka-travel-producer` | `mvn spring-boot:run`                                                            | Produces Kafka events for the booking flow.                                           |
+| 6️⃣  | Java + Spring Travel Consumer | `frank-spring/frank-kafka/frank-kafka-travel-consumer` | `mvn spring-boot:run`                                                            | Consumes Kafka events, updates saga in Hazelcast, and sends SSE to front-end.         |
+
+### Operational Notes:
+
+- Open terminals in the listed order to avoid connection issues between services.
+- Keep at least 6 terminals open to cover all active components.
+- This order ensures Node.js, Spring API Gateway, and Ollama are ready before triggering Kafka and the booking saga.
+- Paths are relative to the root ~/Java/FrankStack/.
+- This table serves as a daily operational reminder to run the full AI + orchestration booking pipeline end-to-end.
+
+---
+
 *Updated: 30 September 2025*
 
 ---
