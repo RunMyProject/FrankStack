@@ -1,3 +1,5 @@
+package com.frankspring.frankorchestrator;
+
 /**
  * FrankOrchestratorApplication.java
  * -----------------------
@@ -12,8 +14,6 @@
  * Author: Edoardo Sabatini
  * Date: 05 October 2025
  */
-
-package com.frankspring.frankorchestrator;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

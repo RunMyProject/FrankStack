@@ -6,7 +6,7 @@
  * Status updates are tracked with a single object { msg, status }.
  *
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
 
 // ===========================================
@@ -35,7 +35,7 @@ const TEST_BOOKING_DATA: AIContext = {
     dateTimeRoundTripDeparture: "2025-09-24T00:00:00Z",
     dateTimeRoundTripReturn: "2025-09-28T00:00:00Z",
     durationOfStayInDays: 4,
-    travelMode: "train",
+    travelMode: "plane",
     budget: 1000,
     people: 1,
     starsOfHotel: 3,

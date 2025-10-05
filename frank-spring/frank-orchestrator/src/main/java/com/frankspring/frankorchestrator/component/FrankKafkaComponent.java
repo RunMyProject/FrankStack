@@ -22,7 +22,10 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 import java.util.Map;
 
+import javax.swing.plaf.basic.BasicLookAndFeel;
+
 import com.frankspring.frankorchestrator.models.BookingMessage;
+import com.frankspring.frankorchestrator.models.BookingResponse;
 import com.frankspring.frankorchestrator.models.SagaStatus;
 import com.frankspring.frankorchestrator.service.SagaStorageService;
 import com.frankspring.frankorchestrator.service.SseEmitterManagerService;
@@ -52,22 +55,28 @@ public class FrankKafkaComponent {
         System.out.println("📨 [KAFKA-LISTENER] Received JSON from Kafka: " + jsonMessage);
 
         try {
-            // 🔄 Deserialize JSON string to BookingMessage
-            BookingMessage bookingMessage = objectMapper.readValue(jsonMessage, BookingMessage.class);
-            String sagaCorrelationId = bookingMessage.getSagaCorrelationId();
+            // 🔄 Deserialize JSON string to BookingResponse
+            BookingResponse bookingResponse = objectMapper.readValue(jsonMessage, BookingResponse.class);
+            String sagaCorrelationId = bookingResponse.getSagaCorrelationId();
 
             System.out.println("🔑 [KAFKA-LISTENER] Correlation ID: " + sagaCorrelationId);
 
             // 💾 Update status to CONFIRMED
-            bookingMessage.setStatus(SagaStatus.CONFIRMED);
+            BookingMessage bookingMessage = BookingMessage.builder()
+                .sagaCorrelationId(sagaCorrelationId)
+                .status(SagaStatus.CONFIRMED)
+                .build();
+
             sagaStorage.updateSaga(bookingMessage);
+            
+            bookingResponse.setStatus(SagaStatus.CONFIRMED);
 
             // 📤 Emit SSE event to frontend
             sseEmitterManager.emit(sagaCorrelationId, Map.of(
                 "message", "Consumer processing completed",
                 "status", SagaStatus.CONFIRMED.name(),
                 "sagaCorrelationId", sagaCorrelationId,
-                "bookingMessage", bookingMessage,
+                "bookingMessage", bookingResponse,
                 "timestamp", Instant.now().toString()
             ));
 

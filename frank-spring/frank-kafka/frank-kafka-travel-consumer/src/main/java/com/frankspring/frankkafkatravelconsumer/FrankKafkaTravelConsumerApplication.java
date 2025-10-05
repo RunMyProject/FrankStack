@@ -1,3 +1,5 @@
+package com.frankspring.frankkafkatravelconsumer;
+
 /**
  * FrankKafkaTravelConsumerApplication.java
  * -----------------------
@@ -9,9 +11,8 @@
  * - Listens to travel booking events from Kafka topics
  *
  * Author: Edoardo Sabatini
- * Date: 02 October 2025
+ * Date: 05 October 2025
  */
-package com.frankspring.frankkafkatravelconsumer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

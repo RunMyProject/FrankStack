@@ -1,3 +1,5 @@
+package com.frankspring.frankkafkatravelconsumer.service;
+
 /**
  * KafkaProducerService.java
  * -------------------------
@@ -12,13 +14,12 @@
  * Date: 05 October 2025
  */
 
-package com.frankspring.frankkafkatravelconsumer.service;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frankspring.frankkafkatravelconsumer.models.BookingMessage;
+import com.frankspring.frankkafkatravelconsumer.models.BookingResponse;
+import com.frankspring.frankkafkatravelconsumer.models.SagaStatus;
 
 @Service
 @RequiredArgsConstructor
@@ -28,22 +29,23 @@ public class KafkaProducerService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 🔄 Sends the updated BookingMessage back to the response topic.
-     * @param bookingMessage the processed booking message
+     * 🔄 Sends the updated BookingResponse back to the response topic.
+     * @param bookingResponse the processed booking response
      */
-    public void sendMessage(BookingMessage bookingMessage) {
+    public void sendMessage(BookingResponse bookingResponse) {
         try {
             // 🧾 Serialize the entire object to JSON
-            String jsonMessage = objectMapper.writeValueAsString(bookingMessage);
+            String jsonMessage = objectMapper.writeValueAsString(bookingResponse);
 
             // 📤 Send to Kafka topic
             kafkaTemplate.send("frank-kafka-response-travel", jsonMessage);
 
-            System.out.println("✔️ [PRODUCER] Kafka BookingMessage sent:");
+            System.out.println("✔️ [PRODUCER] Kafka BookingResponse sent:");
             System.out.println(jsonMessage);
 
         } catch (Exception e) {
-            System.err.println("💥 [PRODUCER] Error sending Kafka BookingMessage: " + e.getMessage());
+            System.err.println("💥 [PRODUCER] Error sending Kafka BookingResponse: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 }
