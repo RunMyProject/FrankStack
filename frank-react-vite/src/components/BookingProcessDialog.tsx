@@ -27,7 +27,7 @@
  * - Internationalization support (English / Italian).
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 03 October 2025
+ * DATE: 05 October 2025
  */
 
 import React, { useEffect, useState } from 'react';
@@ -105,7 +105,27 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
     // Async function to create saga and connect to SSE
     const createAndStreamSaga = async () => {
       try {
-        console.log('📤 [POST] Creating saga with context:', bookingContext);
+        // 🔹 Create JSON in the shape backend expects
+        const payload = {
+          user: {
+            username: bookingContext.system.user,
+            userId: bookingContext.system.user, // assuming user string is unique ID, adapt if you have another ID
+          },
+          fillForm: {
+            tripDeparture: bookingContext.form.tripDeparture,
+            tripDestination: bookingContext.form.tripDestination,
+            dateTimeRoundTripDeparture: bookingContext.form.dateTimeRoundTripDeparture,
+            dateTimeRoundTripReturn: bookingContext.form.dateTimeRoundTripReturn,
+            people: bookingContext.form.people,
+            durationOfStayInDays: bookingContext.form.durationOfStayInDays,
+            travelMode: bookingContext.form.travelMode,
+            budget: bookingContext.form.budget,
+            starsOfHotel: bookingContext.form.starsOfHotel,
+            luggages: bookingContext.form.luggages,
+          }
+        };
+
+        console.log('📤 [POST] Creating saga with context-payload:', payload);
 
         // Step 1: Create saga
         const postResponse = await fetch(urlProxy, {
@@ -114,14 +134,14 @@ const BookingProcessDialog: React.FC<BookingProcessDialogProps> = ({
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify(bookingContext)
+          body: JSON.stringify(payload)
         });
 
         if (!postResponse.ok) {
           throw new Error(`HTTP ${postResponse.status}: ${postResponse.statusText}`);
         }
 
-        const { sagaId: receivedSagaId } = await postResponse.json();
+        const { sagaCorrelationId: receivedSagaId } = await postResponse.json();
         console.log('✅ [POST] Saga created with ID:', receivedSagaId);
         setSagaId(receivedSagaId);
 

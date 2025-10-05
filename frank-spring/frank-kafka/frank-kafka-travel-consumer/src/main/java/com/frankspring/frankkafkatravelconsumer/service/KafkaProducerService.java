@@ -1,15 +1,15 @@
 /**
  * KafkaProducerService.java
- * -----------------------
+ * -------------------------
  * Kafka Producer Service for FrankStack Travel Kafka Response to Saga Orchestrator
  * 
- * NOTES:
- * - Sends messages to Kafka response topic after processing travel booking events
- * - Can be extended to trigger further saga steps or REST calls
- * - Currently sends a simple payload with correlationId
+ * PURPOSE:
+ * - Sends the updated BookingMessage back to the Saga Orchestrator via Kafka
+ * - Updates saga status to CONFIRMED before publishing
+ * - Keeps message structure consistent with the original BookingMessage JSON
  *
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
 
 package com.frankspring.frankkafkatravelconsumer.service;
@@ -17,29 +17,33 @@ package com.frankspring.frankkafkatravelconsumer.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.frankspring.frankkafkatravelconsumer.models.BookingMessage;
 
 @Service
 @RequiredArgsConstructor
 public class KafkaProducerService {
 
     private final KafkaTemplate<String, String> kafkaTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 🔄 Sends a message to Kafka response topic
-     * @param correlationId Unique ID to correlate request and response
+     * 🔄 Sends the updated BookingMessage back to the response topic.
+     * @param bookingMessage the processed booking message
      */
-    public void sendMessage(String correlationId) {
-        // 📝 Construct message payload
-        Map<String, String> message = Map.of(
-            "correlationId", correlationId,
-            "payload", "payload"
-        );
+    public void sendMessage(BookingMessage bookingMessage) {
+        try {
+            // 🧾 Serialize the entire object to JSON
+            String jsonMessage = objectMapper.writeValueAsString(bookingMessage);
 
-        // 📤 Send message to Kafka topic "frank-kafka-response-travel"
-        kafkaTemplate.send("frank-kafka-response-travel", correlationId);
+            // 📤 Send to Kafka topic
+            kafkaTemplate.send("frank-kafka-response-travel", jsonMessage);
 
-        // ✅ Log for debug
-        System.out.println("✔️ Kafka message sent for correlationId: " + correlationId);
+            System.out.println("✔️ [PRODUCER] Kafka BookingMessage sent:");
+            System.out.println(jsonMessage);
+
+        } catch (Exception e) {
+            System.err.println("💥 [PRODUCER] Error sending Kafka BookingMessage: " + e.getMessage());
+        }
     }
 }

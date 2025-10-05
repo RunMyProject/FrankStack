@@ -1,3 +1,5 @@
+package com.frankstack.frankorchestrator.controller;
+
 /**
  * OrchestratorController.java
  * REST Controller for FrankStack Orchestrator API
@@ -27,10 +29,8 @@
  * }
  * 
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
-
-package com.frankstack.frankorchestrator.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;

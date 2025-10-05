@@ -1,3 +1,5 @@
+package com.frankspring.frankorchestrator.config;
+
 /**
  * RestTemplateConfig.java
  * -----------------------
@@ -8,13 +10,12 @@
  * - Can be injected wherever HTTP requests to other microservices are needed
  * 
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
-
-package com.frankstack.frankorchestrator.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
 import org.springframework.web.client.RestTemplate;
 
 @Configuration

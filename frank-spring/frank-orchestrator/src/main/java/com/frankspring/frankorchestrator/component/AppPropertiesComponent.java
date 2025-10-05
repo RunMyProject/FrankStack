@@ -8,10 +8,10 @@
  * - Currently provides the port of the external Kafka Producer service
  *
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
 
-package com.frankstack.frankorchestrator.component;
+package com.frankspring.frankorchestrator.component;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

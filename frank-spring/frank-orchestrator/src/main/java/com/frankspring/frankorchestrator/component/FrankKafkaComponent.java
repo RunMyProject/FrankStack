@@ -1,7 +1,9 @@
+package com.frankspring.frankorchestrator.component;
+
 /**
  * FrankKafkaComponent.java
  * -----------------------
- * Kafka listener component for FrankStack Travel Kafka Saga Orchestrator
+ * Kafka listener component for FrankStack Travel Kafka Saga Orchestrator.
  * 
  * NOTES:
  * - Listens to Kafka responses from external services.
@@ -10,19 +12,22 @@
  * - Handles saga completion flow, including marking completion and closing SSE stream.
  *
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
 
-package com.frankstack.frankorchestrator.component;
-
-import com.frankstack.frankorchestrator.service.SagaStorageService;
-import com.frankstack.frankorchestrator.service.SseEmitterManagerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Map;
+
+import com.frankspring.frankorchestrator.models.BookingMessage;
+import com.frankspring.frankorchestrator.models.SagaStatus;
+import com.frankspring.frankorchestrator.service.SagaStorageService;
+import com.frankspring.frankorchestrator.service.SseEmitterManagerService;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class FrankKafkaComponent {
@@ -33,45 +38,45 @@ public class FrankKafkaComponent {
     @Autowired
     private SseEmitterManagerService sseEmitterManager;
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
     /**
      * 🎧 Kafka Listener
      * - Listens to responses on "frank-kafka-response-travel" topic
-     * - Updates Hazelcast storage with saga status
+     * - Parses the full JSON message into BookingMessage
+     * - Updates saga status in Hazelcast storage
      * - Emits SSE updates to frontend
-     * - Completes saga flow when confirmed
-     *
-     * @param data Correlation ID (saga ID) from Kafka
      */
     @KafkaListener(topics = "frank-kafka-response-travel", groupId = "frank-kafka-group")
-    void listener(String data) {
-        System.out.println("📨 [KAFKA-LISTENER] Received from Kafka: " + data);
+    public void listener(String jsonMessage) {
+        System.out.println("📨 [KAFKA-LISTENER] Received JSON from Kafka: " + jsonMessage);
 
-        String correlationId = data.trim();
-        System.out.println("🔑 [KAFKA-LISTENER] Correlation ID: " + correlationId);
+        try {
+            // 🔄 Deserialize JSON string to BookingMessage
+            BookingMessage bookingMessage = objectMapper.readValue(jsonMessage, BookingMessage.class);
+            String sagaCorrelationId = bookingMessage.getSagaCorrelationId();
 
-        // 🔍 Verify saga exists in Hazelcast storage
-        if (!sagaStorage.exists(correlationId)) {
-            System.err.println("⚠️ [KAFKA-LISTENER] Saga not found for ID: " + correlationId);
-            return;
+            System.out.println("🔑 [KAFKA-LISTENER] Correlation ID: " + sagaCorrelationId);
+
+            // 💾 Update status to CONFIRMED
+            bookingMessage.setStatus(SagaStatus.CONFIRMED);
+            sagaStorage.updateSaga(bookingMessage);
+
+            // 📤 Emit SSE event to frontend
+            sseEmitterManager.emit(sagaCorrelationId, Map.of(
+                "message", "Consumer processing completed",
+                "status", SagaStatus.CONFIRMED.name(),
+                "sagaCorrelationId", sagaCorrelationId,
+                "bookingMessage", bookingMessage,
+                "timestamp", Instant.now().toString()
+            ));
+
+            // 🏁 Complete SSE stream
+            sseEmitterManager.complete(sagaCorrelationId);
+            System.out.println("✅ [KAFKA-LISTENER] Saga flow completed for: " + sagaCorrelationId);
+
+        } catch (Exception e) {
+            System.err.println("💥 [KAFKA-LISTENER] Error processing Kafka message: " + e.getMessage());
         }
-
-        // 💾 Update saga status to CONFIRMED
-        System.out.println("💾 [KAFKA-LISTENER] Updating saga status in Hazelcast...");
-        sagaStorage.updateSagaStatus(correlationId, "CONFIRMED");
-
-        // 📤 Emit SSE event to frontend
-        System.out.println("📤 [KAFKA-LISTENER] Sending SSE update to client...");
-        sseEmitterManager.emit(correlationId, Map.of(
-            "message", "Consumer processing completed",
-            "status", "CONFIRMED",
-            "sagaId", correlationId,
-            "timestamp", Instant.now().toString()
-        ));
-
-        // 🏁 Complete SSE stream for this saga
-        System.out.println("🏁 [KAFKA-LISTENER] Completing SSE stream for saga: " + correlationId);
-        sseEmitterManager.complete(correlationId);
-
-        System.out.println("✅ [KAFKA-LISTENER] Saga flow completed for: " + correlationId);
     }
 }

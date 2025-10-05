@@ -1,3 +1,5 @@
+package com.frankspring.frankorchestrator.config;
+
 /**
  * HazelcastConfig.java
  * Hazelcast In-Memory Configuration
@@ -12,15 +14,14 @@
  * - Perfect for development and single-instance production
  * 
  * Author: Edoardo Sabatini
- * Date: 30 September 2025
+ * Date: 05 October 2025
  */
-
-package com.frankstack.frankorchestrator.config;
 
 import com.hazelcast.config.Config;
 import com.hazelcast.config.MapConfig;
 import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.HazelcastInstance;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 

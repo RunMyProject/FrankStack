@@ -1,3 +1,5 @@
+package com.frankspring.frankorchestrator.service;
+
 /**
  * SseEmitterManagerService.java
  * -----------------------
@@ -10,9 +12,8 @@
  * - Explicit removal method
  * 
  * Author: Edoardo Sabatini
- * Date: 03 October 2025
+ * Date: 05 October 2025
  */
-package com.frankstack.frankorchestrator.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
