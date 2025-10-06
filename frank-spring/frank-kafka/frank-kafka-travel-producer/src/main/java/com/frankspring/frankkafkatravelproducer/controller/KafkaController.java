@@ -11,7 +11,7 @@ package com.frankspring.frankkafkatravelproducer.controller;
  * - Uses KafkaTemplate to send messages
  *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 06 October 2025
  */
 
 import com.frankspring.frankkafkatravelproducer.models.BookingMessage;
@@ -47,6 +47,33 @@ public class KafkaController {
 
             // Send to Kafka topic
             kafkaTemplate.send("frank-kafka-travel", json);
+
+            return "✅ BookingMessage sent to Kafka successfully";
+
+        } catch (Exception e) {
+            System.err.println("❌ [PRODUCER] Error sending BookingMessage: " + e.getMessage());
+            return "❌ Error: " + e.getMessage();
+        }
+    }
+
+    /**
+     * POST endpoint to send BookingMessage to Kafka topic
+     * @param bookingMessage BookingMessage object received from orchestrator
+     * @return confirmation string
+     */
+    @PostMapping("/booktravel")
+    public String bookTravel(@RequestBody BookingMessage bookingMessage) {
+        // Update saga status to indicate producer is processing
+        bookingMessage.setStatus(SagaStatus.PRODUCER_IN_PROGRESS);
+
+        try {
+            // Serialize BookingMessage to JSON
+            String json = objectMapper.writeValueAsString(bookingMessage);
+            System.out.println("📦 [PRODUCER] Sending BookingMessage, sagaCorrelationId = " 
+                               + bookingMessage.getSagaCorrelationId());
+
+            // Send to Kafka topic
+            kafkaTemplate.send("frank-kafka-book-travel", json);
 
             return "✅ BookingMessage sent to Kafka successfully";
 

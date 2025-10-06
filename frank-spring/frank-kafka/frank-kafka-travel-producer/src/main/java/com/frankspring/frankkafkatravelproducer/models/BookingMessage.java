@@ -7,7 +7,7 @@ package com.frankspring.frankkafkatravelproducer.models;
  * Tracks sagaCorrelationId, booking context, and current saga status.
  * 
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 06 October 2025
  */
 
 import lombok.Builder;
@@ -15,8 +15,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 
-import com.frankspring.frankkafkatravelproducer.models.BookingContext;
-import com.frankspring.frankkafkatravelproducer.models.SagaStatus;
+import com.frankspring.frankkafkatravelproducer.models.*;
 
 @Data
 @NoArgsConstructor
@@ -28,5 +27,5 @@ public class BookingMessage {
     private BookingContext bookingContext;
     @Builder.Default
     private SagaStatus status = SagaStatus.CREATED;
-
+    private SagaContext sagaContext;
 }

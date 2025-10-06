@@ -10,7 +10,7 @@
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
-# Date: 05 October 2025
+# Date: 06 October 2025
 
 # 🖥️ Server configuration
 server:
@@ -59,8 +59,23 @@ spring:
               # 🌊 Handles saga creation and SSE streaming
 
             # ✅ Kafka Producer route (internal)
-            - id: kafka-producer
+            - id: kafka-producer-send
               uri: http://localhost:8082
               predicates:
                 - Path=/kafka/send/**
               # 📨 Internal route for Kafka Producer service, not called directly by frontend
+            
+            # 🧭 sendbooktravel
+            - id: frank-orchestrator-sendbooktravel
+              uri: http://localhost:8080
+              predicates:
+                - Method=POST
+                - Path=/frankorchestrator/sendbooktravel
+              # 🧩 Used when user confirms selected transport to continue the saga
+
+            # ✅ Kafka Producer route for booktravel (internal)
+            - id: kafka-producer-booktravel
+              uri: http://localhost:8082
+              predicates:
+                - Path=/kafka/booktravel/**
+              # 📨 Internal route for Kafka Producer service, called by orchestrator

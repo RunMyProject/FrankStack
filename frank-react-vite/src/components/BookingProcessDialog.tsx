@@ -27,7 +27,7 @@
  * - Internationalization-ready (English / Italian).
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 05 October 2025
+ * DATE: 06 October 2025
  */
 
 import React, { useEffect, useState } from 'react';
@@ -105,117 +105,120 @@ const BookingProcessDialog: React.FC<{
     setIsConfirming(true);
 
     try {
-      console.log('📤 [POST] Sending user selection:', { sagaId, selectedOption });
 
-      const response = await fetch(`${urlProxy}/${sagaId}/continue`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          selectedTransportId: selectedOption,
-          stepId: 'service-b'
-        })
-      });
+        const json = {
+          sagaCorrelationId: sagaId,
+          selectedTravelId: selectedOption
+        };
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
+        console.log('📤 [POST] Sending user selection:', json);
 
-      console.log('✅ [POST] User selection confirmed, resuming saga...');
-
-      // Update UI for transport step
-      const selectedFlight = transportOptions.find(o => o.id === selectedOption);
-      setSteps(prev =>
-        prev.map(step => {
-          if (step.id === 'service-b') {
-            return {
-              ...step,
-              status: 'completed',
-              description: `Flight selected: ${selectedFlight?.airline} ${selectedFlight?.flightNumber}`,
-              data: selectedFlight
-            };
-          }
-          if (step.id === 'service-c') {
-            return { ...step, status: 'processing' };
-          }
-          return step;
-        })
-      );
-
-      // Reconnect to SSE for accommodation step
-      console.log('🌊 [SSE] Reconnecting to stream...');
-      const eventSource = new EventSource(`${urlProxy}/${sagaId}/stream`);
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          const { message, status } = data;
-
-          console.log('📥 [SSE] Received (post-selection):', data);
-
-          if (status === 'completed' || status === 'CONFIRMED') {
-            setSteps(prev =>
-              prev.map(step =>
-                step.id === 'service-c'
-                  ? { ...step, status: 'completed', data }
-                  : step
-              )
-            );
-
-            setHasCompleted(true);
-            setIsProcessing(false);
-            setIsConfirming(false);
-            eventSource.close();
-
-            setTimeout(() => {
-              onComplete({
-                message: '🎉 Booking completed successfully!',
-                bookingDetails: {
-                  sagaId,
-                  selectedFlight,
-                  totalPrice: selectedFlight?.price
-                }
-              });
-            }, 500);
-            return;
-          }
-
-          if (status === 'error' || status === 'FAILED') {
-            setIsProcessing(false);
-            setIsConfirming(false);
-            eventSource.close();
-            onError(message || 'Error during processing');
-          }
-
-          if (message.includes('Hotel')) {
-            setSteps(prev =>
-              prev.map(step =>
-                step.id === 'service-c'
-                  ? { ...step, status: 'processing', data }
-                  : step
-              )
-            );
-          }
-
-        } catch (parseError) {
-          console.error('❌ [SSE] Parse error:', parseError);
+        const response = await fetch(`${urlProxy}/sendbooktravel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(json)
+        });
+        
+        if (!response.ok) {
+         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-      };
 
-      eventSource.onerror = (error) => {
-        console.error('❌ [SSE] Connection error:', error);
-        setIsProcessing(false);
+        console.log('✅ [POST] User selection confirmed, resuming saga...');
+
+        // Update UI for transport step
+        const selectedFlight = transportOptions.find(o => o.id === selectedOption);
+        setSteps(prev =>
+          prev.map(step => {
+            if (step.id === 'service-b') {
+              return {
+                ...step,
+                status: 'completed',
+                description: `Flight selected: ${selectedFlight?.airline} ${selectedFlight?.flightNumber}`,
+                data: selectedFlight
+              };
+            }
+            if (step.id === 'service-c') {
+              return { ...step, status: 'processing' };
+            }
+            return step;
+          })
+        );
+
+        // Reconnect to SSE for accommodation step
+        console.log('🌊 [SSE] Reconnecting to stream...');
+        const eventSource = new EventSource(`${urlProxy}/${sagaId}/stream`);
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            const { message, status } = data;
+
+            console.log('📥 [SSE] Received (post-selection):', data);
+
+            if (status === 'completed' || status === 'CONFIRMED') {
+              setSteps(prev =>
+                prev.map(step =>
+                  step.id === 'service-c'
+                    ? { ...step, status: 'completed', data }
+                    : step
+                )
+              );
+
+              setHasCompleted(true);
+              setIsProcessing(false);
+              setIsConfirming(false);
+              eventSource.close();
+
+              setTimeout(() => {
+                onComplete({
+                  message: '🎉 Booking completed successfully!',
+                  bookingDetails: {
+                    sagaId,
+                    selectedFlight,
+                    totalPrice: selectedFlight?.price
+                  }
+                });
+              }, 500);
+              return;
+            }
+
+            if (status === 'error' || status === 'FAILED') {
+              setIsProcessing(false);
+              setIsConfirming(false);
+              eventSource.close();
+              onError(message || 'Error during processing');
+            }
+
+            if (message.includes('Hotel')) {
+              setSteps(prev =>
+                prev.map(step =>
+                  step.id === 'service-c'
+                    ? { ...step, status: 'processing', data }
+                    : step
+                )
+              );
+            }
+
+          } catch (parseError) {
+            console.error('❌ [SSE] Parse error:', parseError);
+          }
+        };
+
+        eventSource.onerror = (error) => {
+          console.error('❌ [SSE] Connection error:', error);
+          setIsProcessing(false);
+          setIsConfirming(false);
+          eventSource.close();
+          onError('Server connection interrupted');
+        };
+
+      } catch (error) {
+        console.error('❌ [POST] Error confirming selection:', error);
         setIsConfirming(false);
-        eventSource.close();
-        onError('Server connection interrupted');
-      };
-
-    } catch (error) {
-      console.error('❌ [POST] Error confirming selection:', error);
-      setIsConfirming(false);
-      onError(error instanceof Error ? error.message : 'Error confirming selection');
-    }
-  };
+        onError(error instanceof Error ? error.message : 'Error confirming selection');
+      }
+    };
 
   // --------------------------------------
   //  Initial Saga creation and SSE stream

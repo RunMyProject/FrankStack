@@ -38,6 +38,8 @@ import com.frankspring.frankorchestrator.models.User;
 import com.frankspring.frankorchestrator.models.FillForm;
 import com.frankspring.frankorchestrator.service.SagaStorageService;
 import com.frankspring.frankorchestrator.service.SseEmitterManagerService;
+import com.frankspring.frankorchestrator.models.SagaContext;
+import com.frankspring.frankorchestrator.models.SagaStatus;
 
 @RestController
 @RequestMapping("/frankorchestrator")
@@ -148,6 +150,9 @@ public class OrchestratorSSEController {
 
             System.out.println("📋 [SSE] Retrieved BookingMessage: " + bookingMessage);
 
+            bookingMessage.setStatus(SagaStatus.SAGA_IN_PROGRESS);
+            sagaStorage.updateSaga(bookingMessage);
+
             // Send to Kafka producer through API Gateway
             // -------------------------------------------
             // Uses AppPropertiesComponent to retrieve the configured Kafka Producer port.
@@ -184,4 +189,96 @@ public class OrchestratorSSEController {
 
         return emitter;
     }
+
+    /**
+     * sendBookTravel
+     * -----------------------
+     * Continues an existing saga after the user selects a transport option.
+     * 
+     * Called by the frontend:
+     * POST /frankorchestrator/sendbooktravel
+     * Body: { "sagaCorrelationId": "...", "selectedTravelId": "..." }
+     * 
+     * RESPONSIBILITIES:
+     * - Validate saga exists in Hazelcast
+     * - Update BookingContext with user selection
+     * - Re-emit BookingMessage to Kafka for hotel search
+     * - Notify via SSE (if open)
+     *
+     * Author: Edoardo Sabatini
+     * Date: 06 October 2025
+     */
+    @PostMapping("/sendbooktravel")
+    public ResponseEntity<Map<String, Object>> sendBookTravel(
+            @RequestBody Map<String, Object> requestBody) {
+
+        System.out.println("➡️ [sendbooktravel] Request received");
+        System.out.println("📦 [sendbooktravel] Body: " + requestBody);
+
+        try {
+            // 1️⃣ Extract sagaCorrelationId and selectedTravelId from body
+            String sagaCorrelationId = (String) requestBody.get("sagaCorrelationId");
+            String selectedTravelId = (String) requestBody.get("selectedTravelId");
+
+            // 2️⃣ Retrieve saga from Hazelcast
+            BookingMessage bookingMessage = sagaStorage.getSaga(sagaCorrelationId);
+            if (bookingMessage == null) {
+                System.err.println("❌ [sendbooktravel] Saga not found: " + sagaCorrelationId);
+                return ResponseEntity.status(404).body(Map.of(
+                        "status", "error",
+                        "message", "Saga not found",
+                        "sagaCorrelationId", sagaCorrelationId
+                ));
+            }
+
+            // 3️⃣ Extract booking context and mode
+            BookingContext bookingContext = bookingMessage.getBookingContext();
+            String travelMode = bookingContext.getFillForm().getTravelMode();
+
+            // 4️⃣ Update saga context with selected transport
+            SagaContext sagaContext = SagaContext.builder()
+                    .selectedTravelId(selectedTravelId)
+                    .build();
+
+            bookingMessage.setSagaContext(sagaContext);
+            bookingMessage.setStatus(SagaStatus.TRANSPORT_CONFIRMED);
+            sagaStorage.updateSaga(bookingMessage);
+
+            System.out.println("✅ [sendbooktravel] Saga updated in Hazelcast: " + sagaCorrelationId);
+            System.out.println("✈️ [sendbooktravel] Transport mode: " + travelMode + " | Selected ID: " + selectedTravelId);
+
+            // 5️⃣ Send updated booking message to Kafka for hotel search
+            String externalServiceUrl = "http://localhost:" 
+                                        + appPropertiesComponent.getKafkaProducerPort() 
+                                        + "/kafka/booktravel";
+
+            restTemplate.postForObject(externalServiceUrl, bookingMessage, String.class);
+            System.out.println("🚀 [sendbooktravel] BookingMessage re-emitted to Kafka (Hotel search step)");
+
+            // 6️⃣ Notify SSE client
+            sseEmitterManager.emit(sagaCorrelationId, Map.of(
+                    "message", "Transport confirmed. Hotel search started.",
+                    "status", "processing",
+                    "sagaCorrelationId", sagaCorrelationId,
+                    "timestamp", Instant.now().toString()
+            ));
+
+            // 7️⃣ Return OK response
+            return ResponseEntity.ok(Map.of(
+                    "status", "ok",
+                    "message", "Saga continued successfully",
+                    "nextStep", "HOTEL_SEARCH",
+                    "sagaCorrelationId", sagaCorrelationId
+            ));
+
+        } catch (Exception e) {
+            System.err.println("💥 [sendbooktravel] Error continuing saga: " + e.getMessage());
+            return ResponseEntity.status(500).body(Map.of(
+                    "status", "error",
+                    "message", "Internal server error",
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
 }

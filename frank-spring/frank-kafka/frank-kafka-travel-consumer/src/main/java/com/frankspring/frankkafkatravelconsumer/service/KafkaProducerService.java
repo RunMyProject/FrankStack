@@ -11,15 +11,14 @@ package com.frankspring.frankkafkatravelconsumer.service;
  * - Keeps message structure consistent with the original BookingMessage JSON
  *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 06 October 2025
  */
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.frankspring.frankkafkatravelconsumer.models.BookingResponse;
-import com.frankspring.frankkafkatravelconsumer.models.SagaStatus;
+import com.frankspring.frankkafkatravelconsumer.models.*;
 
 @Service
 @RequiredArgsConstructor
@@ -45,6 +44,27 @@ public class KafkaProducerService {
 
         } catch (Exception e) {
             System.err.println("💥 [PRODUCER] Error sending Kafka BookingResponse: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * 🔄 Sends the updated BookingMessage back to the response topic.
+     * @param bookingMessage the processed booking response
+     */
+    public void sendMessage(BookingMessage bookingMessage) {
+        try {
+            // 🧾 Serialize the entire object to JSON
+            String jsonMessage = objectMapper.writeValueAsString(bookingMessage);
+
+            // 📤 Send to Kafka topic
+            kafkaTemplate.send("frank-kafka-response-book-travel", jsonMessage);
+
+            System.out.println("✔️ [PRODUCER] Kafka BookingMessage sent:");
+            System.out.println(jsonMessage);
+
+        } catch (Exception e) {
+            System.err.println("💥 [PRODUCER] Error sending Kafka BookingMessage: " + e.getMessage());
             e.printStackTrace();
         }
     }
