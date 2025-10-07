@@ -6,7 +6,7 @@
  * Status updates are tracked with a single object { msg, status }.
  *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 07 October 2025
  */
 
 // ===========================================
@@ -18,6 +18,36 @@ const ENABLE_TEST_MODE = false; // Set to false to disable test mode
 // ===========================================
 // 🧪 TEST DATA
 // ===========================================
+
+const TEST_BOOKING_DATA: AIContext = {
+  system: {
+    maxWords: 50,
+    user: "testUser",
+    userLang: "English",
+    aiName: "FrankStack AI Assistant",
+    currentDateTime: "24/09/2025 00:00",
+    weather: "Sunny",
+    temperatureWeather: 22,
+    bookingSystemEnabled: true
+  },
+  form: {
+    tripDeparture: "Milan",
+    tripDestination: "Paris",
+    dateTimeRoundTripDeparture: "2025-09-24T00:00:00Z",
+    dateTimeRoundTripReturn: "2025-09-28T00:00:00Z",
+    durationOfStayInDays: 4,
+    travelMode: "plane",
+    budget: 1000,
+    people: 2,
+    starsOfHotel: 3,
+    luggages: 2
+  },
+  input: "",
+  output: "🧪 Starting a booking test..."
+};
+
+
+/*
 const TEST_BOOKING_DATA: AIContext = {
   system: {
     maxWords: 50,
@@ -37,13 +67,14 @@ const TEST_BOOKING_DATA: AIContext = {
     durationOfStayInDays: 4,
     travelMode: "plane",
     budget: 1000,
-    people: 1,
+    people: 2,
     starsOfHotel: 3,
     luggages: 2
   },
   input: "",
   output: "🧪 Starting a booking test..."
 };
+*/
 
 // Base
 import React, { useState, useRef, useEffect, useCallback } from "react";

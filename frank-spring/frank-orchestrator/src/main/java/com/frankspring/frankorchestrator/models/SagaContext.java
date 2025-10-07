@@ -4,15 +4,18 @@ package com.frankspring.frankorchestrator.models;
  * SagaContext.java
  * -----------------------
  * Encapsulates saga-related data like selected and booked transport/hotel IDs.
- * 
+ * Used to maintain state across the travel booking saga.
+ * BookingEntry is now included to track booking details.
+ *      
  * Author: Edoardo Sabatini
- * Date: 06 October 2025
+ * Date: 07 October 2025
  */
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
+import com.frankspring.frankorchestrator.models.BookingEntry;
 
 @Data
 @NoArgsConstructor
@@ -23,4 +26,5 @@ public class SagaContext {
     private String bookedTravelId;
     private String selectedHotelId;
     private String bookedHotelId;
+    private BookingEntry bookingEntry;
 }

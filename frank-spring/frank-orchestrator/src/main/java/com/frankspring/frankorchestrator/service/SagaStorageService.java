@@ -4,19 +4,13 @@ package com.frankspring.frankorchestrator.service;
  * SagaStorageService.java
  * -----------------------
  * Service for managing saga state in Hazelcast.
- * 
- * FEATURES:
- * - Create and store saga data
- * - Retrieve saga by ID
- * - Update saga object/status
- * - Delete saga (cleanup)
- * 
- * NOTES:
- * - Uses Hazelcast distributed map for storage
- * - Designed for Saga pattern with real-time updates
- * 
+ *
+ * CHANGES (07 October 2025):
+ * - Store saga state as JSON string in Hazelcast to avoid Compact serialization issues
+ *   with java.time types (Instant). Uses injected ObjectMapper (configured with JavaTimeModule).
+ *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 07 October 2025 (updated 07 October 2025)
  */
 
 import com.hazelcast.core.HazelcastInstance;
@@ -28,6 +22,8 @@ import com.frankspring.frankorchestrator.models.SagaStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.UUID;
 
 @Service
@@ -36,10 +32,13 @@ public class SagaStorageService {
     @Autowired
     private HazelcastInstance hazelcastInstance;
 
+    @Autowired
+    private ObjectMapper objectMapper; // Spring-configured mapper (with JavaTimeModule)
+
     private static final String SAGA_MAP_NAME = "sagaStore";
 
     /**
-     * 🔹 Create a new saga and store it in Hazelcast
+     * 🔹 Create a new saga and store it in Hazelcast (as JSON string).
      * @param bookingContext BookingContext object
      * @return BookingMessage containing sagaCorrelationId and context
      */
@@ -51,28 +50,43 @@ public class SagaStorageService {
                 .status(SagaStatus.CREATED)
                 .build();
 
-        IMap<String, BookingMessage> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
-        sagaMap.put(sagaId, message);
+        try {
+            IMap<String, String> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
+            String json = objectMapper.writeValueAsString(message);
+            sagaMap.put(sagaId, json);
 
-        System.out.println("💾 [STORAGE] Saga stored in Hazelcast: " + sagaId);
+            System.out.println("💾 [STORAGE] Saga stored in Hazelcast (json): " + sagaId);
+        } catch (Exception e) {
+            System.err.println("💥 [STORAGE] Error storing saga as JSON: " + e.getMessage());
+            e.printStackTrace();
+            // still return the POJO so caller has the id/context
+        }
         return message;
     }
 
     /**
-     * 🔹 Retrieve saga by sagaCorrelationId
+     * 🔹 Retrieve saga by sagaCorrelationId (reads JSON and deserializes to BookingMessage)
      * @param sagaId Saga identifier
-     * @return BookingMessage object, or null if not found
+     * @return BookingMessage object, or null if not found / on error
      */
     public BookingMessage getSaga(String sagaId) {
-        IMap<String, BookingMessage> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
-        BookingMessage message = sagaMap.get(sagaId);
+        IMap<String, String> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
+        String json = sagaMap.get(sagaId);
 
-        if (message != null) {
-            System.out.println("📦 [STORAGE] Retrieved saga: " + sagaId);
-        } else {
+        if (json == null) {
             System.out.println("⚠️ [STORAGE] Saga not found: " + sagaId);
+            return null;
         }
-        return message;
+
+        try {
+            BookingMessage message = objectMapper.readValue(json, BookingMessage.class);
+            System.out.println("📦 [STORAGE] Retrieved saga: " + sagaId);
+            return message;
+        } catch (Exception e) {
+            System.err.println("💥 [STORAGE] Error deserializing saga JSON for id " + sagaId + ": " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
     }
 
     /**
@@ -81,7 +95,7 @@ public class SagaStorageService {
      * @return true if exists, false otherwise
      */
     public boolean exists(String sagaId) {
-        IMap<String, BookingMessage> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
+        IMap<String, String> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
         return sagaMap.containsKey(sagaId);
     }
 
@@ -90,13 +104,13 @@ public class SagaStorageService {
      * @param sagaId Saga identifier
      */
     public void deleteSaga(String sagaId) {
-        IMap<String, BookingMessage> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
+        IMap<String, String> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
         sagaMap.remove(sagaId);
         System.out.println("🗑️ [STORAGE] Deleted saga: " + sagaId);
     }
 
     /**
-     * 🔹 Update full saga object
+     * 🔹 Update full saga object (stores as JSON string)
      * @param bookingMessage Updated BookingMessage object
      */
     public void updateSaga(BookingMessage bookingMessage) {
@@ -105,11 +119,17 @@ public class SagaStorageService {
             return;
         }
 
-        IMap<String, BookingMessage> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
-        sagaMap.put(bookingMessage.getSagaCorrelationId(), bookingMessage);
+        try {
+            IMap<String, String> sagaMap = hazelcastInstance.getMap(SAGA_MAP_NAME);
+            String json = objectMapper.writeValueAsString(bookingMessage);
+            sagaMap.put(bookingMessage.getSagaCorrelationId(), json);
 
-        System.out.println("✅ [STORAGE] Updated saga in Hazelcast: " 
-            + bookingMessage.getSagaCorrelationId() 
-            + " -> status=" + bookingMessage.getStatus());
+            System.out.println("✅ [STORAGE] Updated saga in Hazelcast: "
+                    + bookingMessage.getSagaCorrelationId()
+                    + " -> status=" + bookingMessage.getStatus());
+        } catch (Exception e) {
+            System.err.println("💥 [STORAGE] Error updating saga as JSON: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }

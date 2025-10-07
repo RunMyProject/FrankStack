@@ -1,5 +1,19 @@
 # FrankStack
 
+*📅 Update 7 October 2025 — Screenshots*
+
+* **Reached:** Saga completed up to **transport pre-booking** (pre-calculated BookingEntry — not paid).
+* **System:** proposes the **top 3** travel options for user refinement.
+* **Streaming:** unidirectional **SSE** (backend → frontend). User changes are POSTed to **Kafka** and processed by Spring microservices.
+
+**Screenshots (add to `screenshots/`):**
+
+![SagaTransportService](screenshots/SagaTransportService.png)
+
+![TransportBookingConfirmed](screenshots/TransportBookingConfirmed.png)
+
+---
+
 *📅 Update 3 October 2025 — Sequential Call Table*
 
 ## 🙏 Apologies for the delay, the project is very complex!

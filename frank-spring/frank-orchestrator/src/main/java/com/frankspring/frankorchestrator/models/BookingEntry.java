@@ -1,4 +1,4 @@
-package com.frankspring.frankkafkatravelconsumer.models;
+package com.frankspring.frankorchestrator.models;
 
 import lombok.Builder;
 import lombok.Data;

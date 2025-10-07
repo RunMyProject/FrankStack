@@ -4,13 +4,19 @@ package com.frankspring.frankkafkatravelconsumer.utils;
  * BookingUtils.java
  * -----------------------
  * Utility class for booking-related operations.
- * Provides methods to find BookingEntry by travel mode and ID.
- * 
+ * Provides methods to find a BookingEntry by travel mode and ID,
+ * using complete FillForm data for richer booking details.
+ *
+ * CHANGELOG:
+ * - 07 October 2025: Refactored to accept FillForm instead of just "people"
+ *   in order to enrich BookingEntry with travel dates, cities, and luggage info.
+ *
  * Author: Edoardo Sabatini
- * Date: 06 October 2025    
+ * Date: 07 October 2025
  */
 
 import com.frankspring.frankkafkatravelconsumer.models.BookingEntry;
+import com.frankspring.frankkafkatravelconsumer.models.FillForm;
 import com.frankspring.frankkafkatravelconsumer.models.ResultsContext;
 import com.frankspring.frankkafkatravelconsumer.models.results.*;
 
@@ -19,47 +25,111 @@ import java.util.Optional;
 public class BookingUtils {
 
     /**
-     * Searches for a BookingEntry by travel mode and ID within the given Results object.
-     * Automatically calculates price based on number of people and generates UUID + timestamp.
+     * Searches for a BookingEntry by travel mode and ID within the corresponding ResultsContext.
+     * Enriches the result with data from FillForm (trip cities, dates, luggages).
      *
-     * @param travelMode The type of transport: "plane", "train", "bus", "car", "space".
-     * @param travelId   The ID of the specific travel item to find.
-     * @param people     Number of people for this booking (used for price calculation).
-     * @return Optional<BookingEntry> with the matching booking, or empty if not found.
+     * @param travelMode The transport type: "plane", "train", "bus", "car", or "space".
+     * @param travelId   The ID of the specific travel option to find.
+     * @param form       The complete FillForm containing user booking preferences.
+     * @return Optional<BookingEntry> with the matching booking entry, or empty if not found.
      */
-    public static Optional<BookingEntry> findByTravelId(String travelMode, String travelId, int people) {
+    public static Optional<BookingEntry> findByTravelId(String travelMode, String travelId, FillForm form) {
+        // Defensive null checks
+        if (form == null) {
+            System.out.println("⚠️ [BookingUtils] FillForm is null. Cannot process booking.");
+            return Optional.empty();
+        }
+
+        int people = form.getPeople();
+        String tripDeparture = form.getTripDeparture();
+        String tripDestination = form.getTripDestination();
+        String dateTimeRoundTripDeparture = form.getDateTimeRoundTripDeparture();
+        String dateTimeRoundTripReturn = form.getDateTimeRoundTripReturn();
+        int luggages = form.getLuggages();
+
         switch (travelMode.toLowerCase()) {
             case "plane", "flight", "airplane":
                 return ResultsContext.getFlights().stream()
                         .filter(f -> f.id().equalsIgnoreCase(travelId))
-                        .map(f -> BookingEntry.of(travelMode, f.flightNumber(), f.price(), people))
+                        .map(f -> BookingEntry.of(
+                                travelMode,
+                                f.flightNumber(),
+                                f.price(),
+                                people,
+                                tripDeparture,
+                                tripDestination,
+                                dateTimeRoundTripDeparture,
+                                dateTimeRoundTripReturn,
+                                luggages
+                        ))
                         .findFirst();
 
             case "train":
                 return ResultsContext.getTrains().stream()
                         .filter(t -> t.id().equalsIgnoreCase(travelId))
-                        .map(t -> BookingEntry.of(travelMode, t.trainNumber(), t.price(), people))
+                        .map(t -> BookingEntry.of(
+                                travelMode,
+                                t.trainNumber(),
+                                t.price(),
+                                people,
+                                tripDeparture,
+                                tripDestination,
+                                dateTimeRoundTripDeparture,
+                                dateTimeRoundTripReturn,
+                                luggages
+                        ))
                         .findFirst();
 
             case "bus":
                 return ResultsContext.getBuses().stream()
                         .filter(b -> b.id().equalsIgnoreCase(travelId))
-                        .map(b -> BookingEntry.of(travelMode, b.busNumber(), b.price(), people))
+                        .map(b -> BookingEntry.of(
+                                travelMode,
+                                b.busNumber(),
+                                b.price(),
+                                people,
+                                tripDeparture,
+                                tripDestination,
+                                dateTimeRoundTripDeparture,
+                                dateTimeRoundTripReturn,
+                                luggages
+                        ))
                         .findFirst();
 
             case "car":
                 return ResultsContext.getCars().stream()
                         .filter(c -> c.id().equalsIgnoreCase(travelId))
-                        .map(c -> BookingEntry.of(travelMode, c.model(), c.price(), people))
+                        .map(c -> BookingEntry.of(
+                                travelMode,
+                                c.model(),
+                                c.price(),
+                                people,
+                                tripDeparture,
+                                tripDestination,
+                                dateTimeRoundTripDeparture,
+                                dateTimeRoundTripReturn,
+                                luggages
+                        ))
                         .findFirst();
 
             case "space", "spaceship", "rocket":
                 return ResultsContext.getSpaces().stream()
                         .filter(s -> s.id().equalsIgnoreCase(travelId))
-                        .map(s -> BookingEntry.of(travelMode, s.missionName(), s.price(), people))
+                        .map(s -> BookingEntry.of(
+                                travelMode,
+                                s.missionName(),
+                                s.price(),
+                                people,
+                                tripDeparture,
+                                tripDestination,
+                                dateTimeRoundTripDeparture,
+                                dateTimeRoundTripReturn,
+                                luggages
+                        ))
                         .findFirst();
 
             default:
+                System.out.println("❓ [BookingUtils] Unknown travel mode: " + travelMode);
                 return Optional.empty();
         }
     }

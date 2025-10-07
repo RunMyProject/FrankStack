@@ -17,7 +17,7 @@ package com.frankspring.frankorchestrator.controller;
  * - Kafka response handling via FrankKafkaListener
  * 
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 07 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,6 +126,7 @@ public class OrchestratorSSEController {
     public SseEmitter streamSagaExecution(@PathVariable String sagaCorrelationId) {
         System.out.println("🌊 [SSE] Stream requested for sagaCorrelationId: " + sagaCorrelationId);
 
+//        SseEmitter emitter = new SseEmitter(300_000L);
         SseEmitter emitter = new SseEmitter(60_000L);
         sseEmitterManager.addEmitter(sagaCorrelationId, emitter);
 

@@ -12,9 +12,12 @@ package com.frankspring.frankkafkatravelconsumer.listener;
  * - Performs the internal "dirty work" (mock backend logic) for travel search.
  * - Uses BookingUtils to create a BookingEntry for booking requests.
  * - Sends confirmation message back via KafkaProducerService.
- *
+ * - Logs key steps and errors to the console.
+ * - Simulates processing delays with Thread.sleep().
+ * - BookingEntry is now stored in SagaContext for state tracking.
+ *     
  * Author: Edoardo Sabatini
- * Date: 06 October 2025
+ * Date: 07 October 2025
  */
 
 import com.frankspring.frankkafkatravelconsumer.models.*;
@@ -123,18 +126,25 @@ public class FrankKafkaListener {
             BookingMessage bookingMessage = objectMapper.readValue(data, BookingMessage.class);
             bookingMessage.setStatus(SagaStatus.CONSUMER_IN_PROGRESS);
 
-            String travelMode = bookingMessage.getBookingContext().getFillForm().getTravelMode();
-            int people = bookingMessage.getBookingContext().getFillForm().getPeople();
+            FillForm form = bookingMessage.getBookingContext().getFillForm();
+            String travelMode = form.getTravelMode();
             String travelID = bookingMessage.getSagaContext().getSelectedTravelId();
 
-            // Use utility to find matching BookingEntry and calculate total price
-            Optional<BookingEntry> bookedEntry = BookingUtils.findByTravelId(travelMode, travelID, people);
+            // Use the enriched version of BookingUtils
+            Optional<BookingEntry> bookedEntry = BookingUtils.findByTravelId(travelMode, travelID, form);
 
             if (bookedEntry.isPresent()) {
                 BookingEntry entry = bookedEntry.get();
                 bookingMessage.getSagaContext().setBookedTravelId(entry.getId());
+                bookingMessage.getSagaContext().setBookingEntry(entry);
+
                 System.out.println("✅ [CONSUMER] Booking completed for sagaCorrelationId: "
-                        + bookingMessage.getSagaCorrelationId() + " with bookedTravelId: " + entry.getId());
+                        + bookingMessage.getSagaCorrelationId());
+                System.out.println("🧳 [DETAILS] " + entry.getTripDeparture() + " → " + entry.getTripDestination() +
+                        " | People: " + entry.getPeople() +
+                        " | Luggages: " + entry.getLuggages() +
+                        " | Departure: " + entry.getDateTimeRoundTripDeparture() +
+                        " | Return: " + entry.getDateTimeRoundTripReturn());
             } else {
                 System.out.println("⚠️ [CONSUMER] Booking not found for travelId: " + travelID);
             }
