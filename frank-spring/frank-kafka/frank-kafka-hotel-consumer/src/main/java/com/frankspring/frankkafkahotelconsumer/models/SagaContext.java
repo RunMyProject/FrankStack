@@ -1,4 +1,4 @@
-package com.frankspring.frankkafkatravelproducer.models;
+package com.frankspring.frankkafkahotelconsumer.models;
 
 /**
  * SagaContext.java
@@ -15,7 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.frankspring.frankkafkatravelproducer.models.BookingEntry;
+import com.frankspring.frankkafkahotelconsumer.models.HotelBookingEntry;
 
 @Data
 @NoArgsConstructor
@@ -26,5 +26,5 @@ public class SagaContext {
     private String bookedTravelId;
     private String selectedHotelId;
     private String bookedHotelId;
-    private BookingEntry bookingEntry;
+    private HotelBookingEntry hotelBookingEntry;
 }

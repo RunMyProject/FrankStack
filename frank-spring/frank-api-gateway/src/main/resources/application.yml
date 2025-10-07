@@ -10,7 +10,7 @@
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
-# Date: 06 October 2025
+# Date: 07 October 2025
 
 # 🖥️ Server configuration
 server:
@@ -78,4 +78,26 @@ spring:
               uri: http://localhost:8082
               predicates:
                 - Path=/kafka/booktravel/**
+              # 📨 Internal route for Kafka Producer service, called by orchestrator
+
+            # ✅ Kafka Producer route (internal)
+            - id: kafka-producer-sendhotel
+              uri: http://localhost:8086
+              predicates:
+                - Path=/kafka/sendhotel/**
+              # 📨 Internal route for Kafka Producer service, not called directly by frontend
+
+            # 🧭 sendbookhotel
+            - id: frank-orchestrator-sendbookhotel
+              uri: http://localhost:8080
+              predicates:
+                - Method=POST
+                - Path=/frankorchestrator/sendbookhotel
+              # 🧩 Used when user confirms selected hotel to continue the saga
+
+            # ✅ Kafka Producer route for bookhotel (internal)
+            - id: kafka-producer-bookhotel
+              uri: http://localhost:8086
+              predicates:
+                - Path=/kafka/bookhotel/**
               # 📨 Internal route for Kafka Producer service, called by orchestrator

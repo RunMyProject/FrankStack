@@ -16,6 +16,8 @@
  * returned by various backend services.
  * This file is part of the FrankStack project:
  * BookEntry microservice, Saga Orchestration, and AI Chat Interface.
+ * HotelOption, BookingEntry, TransportOption, StepStatus, SagaStep
+ * 
  * -----------------------
  *
  * Author: Edoardo Sabatini
@@ -23,18 +25,54 @@
  *
  */
 
-export interface BookingEntry {
+export interface CommonBookingEntry {
   id: string;
-  type: 'transport' | 'accommodation' | 'activity';
+  type?: string; // plane/train/bus/car/space
   reference: string;
   price: number;
   people: number;
   bookedAt: string;
   tripDeparture: string; 
   tripDestination: string;
+
   dateTimeRoundTripDeparture: string;
   dateTimeRoundTripReturn: string;
+}
+
+export interface BookingEntry extends CommonBookingEntry {  
+  companyName?: string;
   luggages: number;
+}
+
+// Represents a hotel booking entry in the system
+export interface HotelBookingEntry extends CommonBookingEntry {
+  // fields specific to hotel bookings
+  hotelName: string;
+  stars: number; // 1-7
+  roomType: string;
+  // data specs for hotel booking (should match transport booking dates if hotel covers whole trip)
+  address: string;
+  amenities: string[];
+  rating?: number; // 1-10
+  distanceFromCenter?: string;
+}
+
+export interface HotelOption {
+  id: string;
+  name: string;
+  stars: number; // 1-7
+  address: string;
+  duration: number; // nights
+  price: number;
+  roomType: string;
+  amenities: string[]; // ["WiFi", "Pool", "Gym", "Spa", "Breakfast"]
+  rating: number; // 1-10
+  distanceFromCenter: string; // "2.5 km from city center"
+  cancellationPolicy: string; // "Free cancellation", "Non-refundable", etc.
+  images: string[]; // URLs
+  
+  departureTime: string;
+  arrivalTime: string;
 }
 
 export interface TransportOption {
@@ -42,13 +80,14 @@ export interface TransportOption {
   type: string; // e.g. "plane", "train", "bus", "car", "space"
   airline?: string;
   flightNumber?: string;
-  departureTime: string;
-  arrivalTime: string;
   duration: string;
   price: number;
   stops: number;
   seatClass: string;
   benefits: string[];
+
+  departureTime: string;
+  arrivalTime: string;
 }
 
 export type StepStatus =
@@ -67,6 +106,6 @@ export interface SagaStep {
   name: string;
   description: string;
   status: StepStatus;
-  bookingEntry: BookingEntry;
+  bookingEntry: BookingEntry | HotelBookingEntry;
   errorMessage?: string;
 }

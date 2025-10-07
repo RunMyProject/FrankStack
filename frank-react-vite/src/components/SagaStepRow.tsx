@@ -11,10 +11,10 @@
  */
 
 import React from 'react';
-
-import type { TransportOption } from '../types/saga';
+import type { TransportOption, HotelOption, HotelBookingEntry, BookingEntry } from '../types/saga';
 import type { SagaStep } from '../types/saga';
 import TransportOptionsCard from './TransportOptionsCard';
+import HotelOptionsCard from './HotelOptionsCard';
 
 // Helper function to get transport icon (matches FormBlock.tsx logic)
 const getTransportIcon = (mode?: string): string => {
@@ -48,9 +48,16 @@ const getTransportIcon = (mode?: string): string => {
   }
 };
 
+// Helper function to get star emojis (max 7 stars)
+const getStarsDisplay = (stars: number): string => {
+  const maxStars = 7;
+  const limitedStars = Math.min(stars, maxStars);
+  return limitedStars > 3 ? `⭐⭐⭐ (${limitedStars})` : `⭐`.repeat(limitedStars);
+};
+
 type SagaStepRowProps = {
   step: SagaStep;
-  options?: TransportOption[];
+  options?: (TransportOption | HotelOption)[];
   selectedOption: string;
   onSelectOption: (id: string) => void;
   onConfirmOption: () => void;
@@ -67,8 +74,12 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
     switch (step.status) {
       case 'completed': 
         // If this is the completed transport step with data, show transport icon
-        if (step.id === 'service-b' && step.data?.bookingEntry?.type) {
-          return getTransportIcon(step.data.bookingEntry.type);
+        if (step.id === 'service-b' && step.bookingEntry?.type) {
+          return getTransportIcon(step.bookingEntry.type);
+        }
+        // If this is the completed hotel step with stars
+        if (step.id === 'service-c' && step.bookingEntry && 'stars' in step.bookingEntry) {
+          return getStarsDisplay((step.bookingEntry as HotelBookingEntry).stars);
         }
         return '✅';
       case 'processing': return '⚙️';
@@ -95,54 +106,68 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
 
   // Render detailed booking info when step is completed and has data
   const renderBookingDetails = () => {
-    if (step.status !== 'completed' || !step.data) return null;
+    if (step.status !== 'completed' || !step.bookingEntry) return null;
 
-    // Check if this is transport booking with detailed data
-    const bookingEntry = step.data.bookingEntry || step.data;
+    // Don't show booking details for service-a (orchestrator step)
+    if (step.id === 'service-a') {
+      return null;
+    }
+
+    const bookingData = step.bookingEntry;
     
-    if (bookingEntry.reference && bookingEntry.type) {
-      // Find the selected option to get the company name
-      let companyName = bookingEntry.companyName || bookingEntry.airline || 'N/A';
-      if (options && selectedOption) {
-        const selectedOpt = options.find(opt => opt.id === selectedOption);
-        if (selectedOpt) {
-          companyName = selectedOpt.airline || selectedOpt.companyName || companyName;
-        }
-      }
-      
+    // Check if this is a hotel booking (has hotelName property)
+    if ('hotelName' in bookingData) {
+      const hotelData = bookingData as HotelBookingEntry;
       return (
-        <div className="mt-2 p-2 bg-white rounded border border-green-200">
-          <div className="text-xs text-green-800 grid grid-cols-2 gap-1">
-            <div className="font-medium">Company: {companyName}</div>
-            <div><span className="font-medium">Ref:</span> {bookingEntry.reference}</div>
-            <div><span className="font-medium">Route:</span> {bookingEntry.tripDeparture} → {bookingEntry.tripDestination}</div>
-            <div><span className="font-medium">Departure:</span> {formatDate(bookingEntry.dateTimeRoundTripDeparture)}</div>
-            <div><span className="font-medium">Return:</span> {formatDate(bookingEntry.dateTimeRoundTripReturn)}</div>
-            <div><span className="font-medium">People:</span> {bookingEntry.people}</div>
-            <div><span className="font-medium">Luggage:</span> {bookingEntry.luggages}</div>
-            <div className="font-semibold pt-1 col-span-2 border-t border-green-100">
-              <span className="font-medium">Cost:</span> €{bookingEntry.price}
+        <div className="mt-2 p-2 bg-white rounded border border-purple-200">
+          <div className="text-xs text-purple-800">
+            <div className="font-medium flex items-center gap-1">
+              {hotelData.hotelName}
+              {hotelData.stars && <span className="text-xs">{getStarsDisplay(hotelData.stars)}</span>}
             </div>
+            <div>Check-in: {formatDate(hotelData.dateTimeRoundTripDeparture)}</div>
+            <div>Check-out: {formatDate(hotelData.dateTimeRoundTripReturn)}</div>
+            <div className="font-semibold mt-1">€{hotelData.price}</div>
+            {hotelData.roomType && <div className="text-xs mt-0.5">{hotelData.roomType}</div>}
+            {hotelData.amenities && (
+              <div className="text-xs mt-0.5 text-gray-600">
+                {hotelData.amenities.slice(0, 3).join(', ')}
+              </div>
+            )}
           </div>
         </div>
       );
     }
 
-    // For accommodation or other types
-    if (step.data.name || step.data.hotelName) {
-      return (
-        <div className="mt-2 p-2 bg-white rounded border border-green-200">
-          <div className="text-xs text-green-800">
-            <div className="font-medium">{step.data.name || step.data.hotelName}</div>
-            <div>Check-in: {formatDate(step.data.checkInDate || step.data.startDate)}</div>
-            <div>Check-out: {formatDate(step.data.checkOutDate || step.data.endDate)}</div>
-            <div className="font-semibold mt-1">€{step.data.price}</div>
+    // Otherwise it's a transport booking (has type property)
+    const transportData = bookingData as BookingEntry;
+    let companyName = transportData.companyName || 'N/A';
+    
+    // Try to get company name from selected option if available
+    if (options && selectedOption) {
+      const selectedOpt = options.find(opt => opt.id === selectedOption && 'airline' in opt);
+      if (selectedOpt && typeof selectedOpt === 'object' && selectedOpt !== null) {
+        const transportOpt = selectedOpt as TransportOption;
+        companyName = transportOpt.airline || companyName;
+      }
+    }
+    
+    return (
+      <div className="mt-2 p-2 bg-white rounded border border-green-200">
+        <div className="text-xs text-green-800 grid grid-cols-2 gap-1">
+          <div className="font-medium">Company: {companyName}</div>
+          <div><span className="font-medium">Ref:</span> {transportData.reference}</div>
+          <div><span className="font-medium">Route:</span> {transportData.tripDeparture} → {transportData.tripDestination}</div>
+          <div><span className="font-medium">Departure:</span> {formatDate(transportData.dateTimeRoundTripDeparture)}</div>
+          <div><span className="font-medium">Return:</span> {formatDate(transportData.dateTimeRoundTripReturn)}</div>
+          <div><span className="font-medium">People:</span> {transportData.people}</div>
+          <div><span className="font-medium">Luggage:</span> {transportData.luggages}</div>
+          <div className="font-semibold pt-1 col-span-2 border-t border-green-100">
+            <span className="font-medium">Cost:</span> €{transportData.price}
           </div>
         </div>
-      );
-    }
-
-    return null;
+      </div>
+    );
   };
 
   return (
@@ -160,14 +185,26 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
           )}
 
           {step.status === 'user_input_required' && options && (
-            <TransportOptionsCard
-              options={options}
-              selectedId={selectedOption}
-              onSelect={onSelectOption}
-              onConfirm={onConfirmOption}
-              isConfirming={isConfirming}
-              transportMode={transportMode}
-            />
+            <>
+              {step.id === 'service-b' ? (
+                <TransportOptionsCard
+                  options={options as TransportOption[]}
+                  selectedId={selectedOption}
+                  onSelect={onSelectOption}
+                  onConfirm={onConfirmOption}
+                  isConfirming={isConfirming}
+                  transportMode={transportMode}
+                />
+              ) : step.id === 'service-c' ? (
+                <HotelOptionsCard
+                  options={options as HotelOption[]}
+                  selectedId={selectedOption}
+                  onSelect={onSelectOption}
+                  onConfirm={onConfirmOption}
+                  isConfirming={isConfirming}
+                />
+              ) : null}
+            </>
           )}
 
           {renderBookingDetails()}

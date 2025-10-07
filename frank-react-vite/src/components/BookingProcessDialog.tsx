@@ -27,13 +27,16 @@
  * - Proper cleanup on dialog close or connection interruption.
  * - Internationalization-ready (English / Italian).
  *
+ * Uses BookingManager for backend communication and displays the booking process.
+ *
  * AUTHOR: Edoardo Sabatini
  * DATE: 07 October 2025
  */
 
 import React, { useEffect, useState, useRef } from 'react';
 import type { AIContext, ProcessResult } from '../types/chat';
-import type { TransportOption, SagaStep, BookingEntry } from '../types/saga';
+import type { TransportOption, HotelOption, SagaStep } from '../types/saga';
+import { BookingManager } from '../services/BookingManager';
 import SagaStepRow from './SagaStepRow';
 
 // --------------------------------------
@@ -56,363 +59,99 @@ const BookingProcessDialog: React.FC<{
   const [sagaId, setSagaId] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<string>('');
   const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
+  const [hotelOptions, setHotelOptions] = useState<HotelOption[]>([]);
   const [isConfirming, setIsConfirming] = useState(false);
 
-  // Refs for shared event source and state
-  const eventSourceRef = useRef<EventSource | null>(null);
-  const isSSEConnectedRef = useRef(false);
-
-  // Backend Orchestrator endpoint
-  const urlProxy = "http://localhost:8081/frankorchestrator";
-
-  // Initial step definitions for UI
-  const initialSteps: SagaStep[] = [
-    {
-      id: 'service-a',
-      name: 'Saga Orchestrator',
-      description: 'Initializing distributed transaction',
-      status: 'pending',
-      bookingEntry: {} as BookingEntry
-    },
-    {
-      id: 'service-b',
-      name: 'Transport Service',
-      description: 'Processing transport booking',
-      status: 'pending',
-      bookingEntry: {} as BookingEntry
-    },
-    {
-      id: 'service-c',
-      name: 'Accommodation Service',
-      description: 'Processing hotel booking',
-      status: 'pending',
-      bookingEntry: {} as BookingEntry
-    }
-  ];
+  // Ref for BookingManager instance
+  const bookingManagerRef = useRef<BookingManager | null>(null);
 
   // Reset dialog state when closed or reopened
   useEffect(() => {
     if (!isOpen) {
-      setSteps(initialSteps);
+      // Cleanup booking manager
+      if (bookingManagerRef.current) {
+        bookingManagerRef.current.cleanup();
+        bookingManagerRef.current = null;
+      }
+      
+      // Reset state
+      setSteps([]);
       setIsProcessing(false);
       setHasCompleted(false);
       setSagaId(null);
       setSelectedOption('');
       setTransportOptions([]);
+      setHotelOptions([]);
       setIsConfirming(false);
-      // Close any existing SSE connection
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-        isSSEConnectedRef.current = false;
-      }
-    } else {
-      setSteps(initialSteps);
     }
   }, [isOpen]);
 
-  // --------------------------------------
-  //  Establish SSE connection
-  // --------------------------------------
-  const establishSSEConnection = (sagaIdToConnect: string) => {
-    if (isSSEConnectedRef.current) return;
+  // Initialize BookingManager with callbacks
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const callbacks = {
+      onStepUpdate: (updatedSteps: SagaStep[]) => {
+        setSteps(updatedSteps);
+      },
+      onTransportOptions: (options: TransportOption[]) => {
+        setTransportOptions(options);
+      },
+      onHotelOptions: (options: HotelOption[]) => {
+        setHotelOptions(options);
+      },
+      onUserInputRequired: () => {
+        setIsProcessing(false);
+      },
+      onCompleted: (result: ProcessResult) => {
+        setHasCompleted(true);
+        setIsProcessing(false);
+        onComplete(result);
+      },
+      onError: (error: string) => {
+        setIsProcessing(false);
+        onError(error);
+      }
+    };
+
+    bookingManagerRef.current = new BookingManager(callbacks);
+    setSteps(bookingManagerRef.current.getSteps());
+  }, [isOpen]);
+
+  // Start saga when dialog opens and context is available
+  useEffect(() => {
+    if (!isOpen || !bookingContext || hasCompleted) return;
     
-    console.log('🌊 [SSE] Connecting to stream:', sagaIdToConnect);
-    const eventSource = new EventSource(`${urlProxy}/${sagaIdToConnect}/stream`);
-    eventSourceRef.current = eventSource;
-    isSSEConnectedRef.current = true;
-
-    eventSource.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        const { message, status, bookingMessage } = data;
-
-        console.log('📥 [SSE] Received:', data);
-
-        // Step A completed → Transport processing
-        if (message.includes('Saga processing started') && status === 'processing') {
-          setSteps(prev =>
-            prev.map(step => {
-              if (step.id === 'service-a') {
-                return { ...step, status: 'completed', data };
-              }
-              if (step.id === 'service-b') {
-                return { ...step, status: 'processing', data };
-              }
-              return step;
-            })
-          );
-        }
-
-        // Transport service completed, results available (initial transport options)
-        if (status === 'completed' || status === 'CONFIRMED') {
-          const { results } = bookingMessage;
-          if (!results) {
-            console.warn('⚠️ [SSE] No results found in bookingMessage.');
-            return;
-          }
-
-          // Dynamically detect which transport array is populated
-          const filledKey = Object.keys(results).find(
-            key => results[key as keyof typeof results] !== null
-          );
-
-          if (!filledKey) {
-            console.warn('⚠️ [SSE] No transport option filled.');
-            return;
-          }
-
-          const transportOptions = results[filledKey as keyof typeof results];
-          console.log(`🧭 [SSE] Detected filled transport mode: ${filledKey}`);
-
-          setTransportOptions(transportOptions as TransportOption[]);
-
-          // Update saga step to wait for user input
-          setSteps(prev =>
-            prev.map(step =>
-              step.id === 'service-b'
-                ? {
-                    ...step,
-                    status: 'user_input_required',
-                    description: 'Multiple transport options found — please select one.'
-                  }
-                : step
-            )
-          );
-
-          setIsProcessing(false);
-          // Do NOT close connection here - keep it open for further messages
-          return;
-        }
-
-        // TRANSPORT_CONFIRMED from Java listenerBookTravel (after user selection)
-        if (status === 'TRANSPORT_CONFIRMED') {
-          
-          console.log('✅ [SSE] Transport confirmed by backend');
-          console.log('📦 [SSE] Full booking message:', bookingMessage);
-
-          // Extract REAL booked data from sagaContext.bookingEntry
-          const bookingEntry = bookingMessage?.sagaContext?.bookingEntry;
-          
-          console.log('🎫 [SSE] Booking entry (REAL booked data):', bookingEntry);
-
-          if (!bookingEntry) {
-            console.warn('⚠️ [SSE] No bookingEntry found in sagaContext');
-            return;
-          }
-
-          // Update UI with transport icon and REAL backend data
-          setSteps(prev =>
-            prev.map(step => {
-              if (step.id === 'service-b') {
-                return {
-                  ...step,
-                  status: 'completed',
-                  description: 'Transport booking confirmed',
-                  data: typeof step.bookingEntry === 'object' && step.bookingEntry !== null ? { ...step.bookingEntry, bookingEntry } : null
-                };
-              }
-              if (step.id === 'service-c') {
-                return { ...step, status: 'processing', description: 'Processing accommodation...' };
-              }
-              return step;
-            })
-          );
-
-          // Stream stays open - waiting for accommodation
-          console.log('⏳ [SSE] Waiting for accommodation confirmation...');
-          return;
-        }
-
-        // Final CONFIRMED from Java listener (accommodation)
-        if (status === 'CONFIRMED') {
-          console.log('📥 [SSE] CONFIRMED received');
-          console.log('📦 [SSE] Booking message:', bookingMessage);
-
-          // Check if this contains the old "results" structure (flights/trains/etc)
-          const hasTransportResults = bookingMessage?.results?.flights || 
-                                     bookingMessage?.results?.trains ||
-                                     bookingMessage?.results?.buses ||
-                                     bookingMessage?.results?.cars;
-
-          if (hasTransportResults) {
-            console.log('⏭️ [SSE] IGNORING - This is the old transport results, not accommodation');
-            console.log('⏭️ [SSE] Waiting for real accommodation confirmation...');
-            // DO NOT close stream, DO NOT process this message
-            return;
-          }
-
-          // This should be the real accommodation data
-          console.log('✅ [SSE] Processing accommodation confirmation');
-
-          setSteps(prev =>
-            prev.map(step =>
-              step.id === 'service-c'
-                ? { 
-                    ...step, 
-                    status: 'completed', 
-                    description: '✅ Accommodation booking completed',
-                    data: bookingMessage 
-                  }
-                : step
-            )
-          );
-
-          setHasCompleted(true);
-          setIsProcessing(false);
-          eventSource.close();
-          isSSEConnectedRef.current = false;
-          eventSourceRef.current = null;
-
-          const transportStep = steps.find(s => s.id === 'service-b');
-          const transportPrice = transportStep?.bookingEntry?.price || 0;
-          const accommodationPrice = bookingMessage?.price || 0;
-
-          setTimeout(() => {
-            onComplete({
-              message: '🎉 Booking completed successfully!',
-              bookingDetails: {
-                sagaId: sagaIdToConnect,
-                transport: transportStep?.bookingEntry,
-                accommodation: bookingMessage,
-                totalPrice: transportPrice + accommodationPrice
-              }
-            });
-          }, 500);
-          return;
-        }
-
-        if (status === 'error' || status === 'FAILED') {
-          setIsProcessing(false);
-          eventSource.close();
-          isSSEConnectedRef.current = false;
-          eventSourceRef.current = null;
-          onError(message || 'Error during processing');
-        }
-
-      } catch (parseError) {
-        console.error('❌ [SSE] Parse error:', parseError);
-      }
+    const startBookingProcess = async () => {
+      if (!bookingManagerRef.current) return;
+      
+      setIsProcessing(true);
+      await bookingManagerRef.current.createSaga(bookingContext);
+      setSagaId(bookingManagerRef.current.getSagaId());
     };
 
-    eventSource.onerror = (error) => {
-      console.error('❌ [SSE] Connection error:', error);
-      if (eventSource.readyState === EventSource.CLOSED && hasCompleted) {
-        console.log('✅ [SSE] Stream closed normally');
-        return;
-      }
-      setIsProcessing(false);
-      eventSource.close();
-      isSSEConnectedRef.current = false;
-      eventSourceRef.current = null;
-      onError('Server connection interrupted');
-    };
-  };
+    startBookingProcess();
+  }, [isOpen, bookingContext, hasCompleted]);
 
   // --------------------------------------
   //  Handle user selection confirmation
   // --------------------------------------
   const handleConfirmSelection = async () => {
-    if (!selectedOption || !sagaId) return;
+    if (!selectedOption || !bookingManagerRef.current) return;
     setIsConfirming(true);
 
     try {
-      const json = {
-        sagaCorrelationId: sagaId,
-        selectedTravelId: selectedOption
-      };
-
-      console.log('📤 [POST] Sending user selection:', json);
-
-      const response = await fetch(`${urlProxy}/sendbooktravel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(json)
-      });
-      
-      if (!response.ok) {
-       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      console.log('✅ [POST] User selection confirmed, resuming saga...');
-
-      // Update UI to show processing state after confirmation
-      setSteps(prev =>
-        prev.map(step => {
-          if (step.id === 'service-b') {
-            return {
-              ...step,
-              status: 'processing',
-              description: 'Confirming transport booking...'
-            };
-          }
-          return step;
-        })
-      );
-
-      // Close selection UI after POST
-      setIsConfirming(false);
-
-      // If we don't have an active SSE connection, establish it now
-      if (!eventSourceRef.current && sagaId) {
-        establishSSEConnection(sagaId);
-      }
-
+      await bookingManagerRef.current.sendUserSelection(selectedOption);
+      // State updates are handled via callbacks
     } catch (error) {
-      console.error('❌ [POST] Error confirming selection:', error);
+        if(error instanceof Error) {
+          onError(error.message);
+        } 
+      // Error handling is done via callbacks
+    } finally {
       setIsConfirming(false);
-      onError(error instanceof Error ? error.message : 'Error confirming selection');
     }
   };
-
-  // --------------------------------------
-  //  Initial Saga creation and SSE stream
-  // --------------------------------------
-  useEffect(() => {
-    if (!isOpen || !bookingContext || hasCompleted || sagaId !== null) return;
-    setIsProcessing(true);
-
-    const createAndStreamSaga = async () => {
-      try {
-        const payload = {
-          user: {
-            username: bookingContext.system.user,
-            userId: bookingContext.system.user
-          },
-          fillForm: { ...bookingContext.form }
-        };
-
-        console.log('📤 [POST] Creating saga:', payload);
-
-        const postResponse = await fetch(urlProxy, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload)
-        });
-
-        if (!postResponse.ok) {
-          throw new Error(`HTTP ${postResponse.status}: ${postResponse.statusText}`);
-        }
-
-        const { sagaCorrelationId: receivedSagaId } = await postResponse.json();
-        console.log('✅ [POST] Saga created:', receivedSagaId);
-        setSagaId(receivedSagaId);
-
-        // Establish SSE connection for the saga
-        establishSSEConnection(receivedSagaId);
-
-      } catch (error) {
-        console.error('❌ [POST] Error creating saga:', error);
-        setIsProcessing(false);
-        onError(error instanceof Error ? error.message : 'Error creating saga');
-      }
-    };
-
-    createAndStreamSaga();
-
-  }, [isOpen, bookingContext, hasCompleted, sagaId]);
 
   // --------------------------------------
   //  UI Rendering
@@ -440,7 +179,11 @@ const BookingProcessDialog: React.FC<{
             <SagaStepRow
               key={step.id}
               step={step}
-              options={step.id === 'service-b' ? transportOptions : undefined}
+              options={
+                step.id === 'service-b' ? transportOptions : 
+                step.id === 'service-c' ? hotelOptions : 
+                undefined
+              }
               selectedOption={selectedOption}
               onSelectOption={setSelectedOption}
               onConfirmOption={handleConfirmSelection}

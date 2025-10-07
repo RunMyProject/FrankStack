@@ -11,15 +11,17 @@ package com.frankspring.frankorchestrator.models;
  * - FAILED and CANCELLED for error handling and manual cancellation
  *
  * Author: Edoardo Sabatini
- * Date: 06 October 2025
+ * Date: 07 October 2025
  */
 public enum SagaStatus {
-    CREATED,              // Saga created and stored in Hazelcast
-    SAGA_IN_PROGRESS,     // Saga is currently being processed
-    PRODUCER_IN_PROGRESS, // Saga is being processed by the producer
-    CONSUMER_IN_PROGRESS, // Saga is being processed by the consumer
-    CONFIRMED,            // Saga completed successfully
-    FAILED,               // Saga failed, compensation triggered
-    CANCELLED,            // Saga manually cancelled
-    TRANSPORT_CONFIRMED   // Saga transport step confirmed
+    CREATED,                // Saga created and stored in Hazelcast
+    SAGA_IN_PROGRESS,       // Saga is currently being processed
+    PRODUCER_IN_PROGRESS,   // Saga is being processed by the producer
+    CONSUMER_IN_PROGRESS,   // Saga is being processed by the consumer
+    CONFIRMED,              // Saga completed successfully
+    FAILED,                 // Saga failed, compensation triggered
+    CANCELLED,              // Saga manually cancelled
+    TRANSPORT_CONFIRMED,    // Saga transport step confirmed
+    HOTEL_CONFIRMED,        // Saga hotel step confirmed
+    HOTEL_BOOKING_CONFIRMED // Saga hotel step confirmed
 }
