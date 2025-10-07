@@ -10,10 +10,32 @@
  *
  * These types are used across the AI chat orchestration layer
  * to ensure consistency between frontend and backend data models.
+ * They facilitate type-safe handling of saga steps,
+ * including user interactions and error management.
+ * They also define the structure of transport options
+ * returned by various backend services.
+ * This file is part of the FrankStack project:
+ * BookEntry microservice, Saga Orchestration, and AI Chat Interface.
+ * -----------------------
  *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 07 October 2025
+ *
  */
+
+export interface BookingEntry {
+  id: string;
+  type: 'transport' | 'accommodation' | 'activity';
+  reference: string;
+  price: number;
+  people: number;
+  bookedAt: string;
+  tripDeparture: string; 
+  tripDestination: string;
+  dateTimeRoundTripDeparture: string;
+  dateTimeRoundTripReturn: string;
+  luggages: number;
+}
 
 export interface TransportOption {
   id: string;
@@ -45,6 +67,6 @@ export interface SagaStep {
   name: string;
   description: string;
   status: StepStatus;
-  data?: unknown;
+  bookingEntry: BookingEntry;
   errorMessage?: string;
 }

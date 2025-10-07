@@ -33,7 +33,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import type { AIContext, ProcessResult } from '../types/chat';
-import type { TransportOption, SagaStep } from '../types/saga';
+import type { TransportOption, SagaStep, BookingEntry } from '../types/saga';
 import SagaStepRow from './SagaStepRow';
 
 // --------------------------------------
@@ -71,19 +71,22 @@ const BookingProcessDialog: React.FC<{
       id: 'service-a',
       name: 'Saga Orchestrator',
       description: 'Initializing distributed transaction',
-      status: 'pending'
+      status: 'pending',
+      bookingEntry: {} as BookingEntry
     },
     {
       id: 'service-b',
       name: 'Transport Service',
       description: 'Processing transport booking',
-      status: 'pending'
+      status: 'pending',
+      bookingEntry: {} as BookingEntry
     },
     {
       id: 'service-c',
       name: 'Accommodation Service',
       description: 'Processing hotel booking',
-      status: 'pending'
+      status: 'pending',
+      bookingEntry: {} as BookingEntry
     }
   ];
 
@@ -184,6 +187,7 @@ const BookingProcessDialog: React.FC<{
 
         // TRANSPORT_CONFIRMED from Java listenerBookTravel (after user selection)
         if (status === 'TRANSPORT_CONFIRMED') {
+          
           console.log('✅ [SSE] Transport confirmed by backend');
           console.log('📦 [SSE] Full booking message:', bookingMessage);
 
@@ -205,7 +209,7 @@ const BookingProcessDialog: React.FC<{
                   ...step,
                   status: 'completed',
                   description: 'Transport booking confirmed',
-                  data: { ...step.data, bookingEntry }
+                  data: typeof step.bookingEntry === 'object' && step.bookingEntry !== null ? { ...step.bookingEntry, bookingEntry } : null
                 };
               }
               if (step.id === 'service-c') {
@@ -261,7 +265,7 @@ const BookingProcessDialog: React.FC<{
           eventSourceRef.current = null;
 
           const transportStep = steps.find(s => s.id === 'service-b');
-          const transportPrice = transportStep?.data?.bookingEntry?.price || 0;
+          const transportPrice = transportStep?.bookingEntry?.price || 0;
           const accommodationPrice = bookingMessage?.price || 0;
 
           setTimeout(() => {
@@ -269,7 +273,7 @@ const BookingProcessDialog: React.FC<{
               message: '🎉 Booking completed successfully!',
               bookingDetails: {
                 sagaId: sagaIdToConnect,
-                transport: transportStep?.data?.bookingEntry,
+                transport: transportStep?.bookingEntry,
                 accommodation: bookingMessage,
                 totalPrice: transportPrice + accommodationPrice
               }
