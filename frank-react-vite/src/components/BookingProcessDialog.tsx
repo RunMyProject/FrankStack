@@ -30,7 +30,7 @@
  * Uses BookingManager for backend communication and displays the booking process.
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 07 October 2025
+ * DATE: 08 October 2025
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -153,6 +153,26 @@ const BookingProcessDialog: React.FC<{
     }
   };
 
+    // --------------------------------------
+  //  Handle user selection confirmation
+  // --------------------------------------
+  const handleConfirmHotelSelection = async () => {
+    if (!selectedOption || !bookingManagerRef.current) return;
+    setIsConfirming(true);
+
+    try {
+      await bookingManagerRef.current.sendUserHotelSelection(selectedOption);
+      // State updates are handled via callbacks
+    } catch (error) {
+        if(error instanceof Error) {
+          onError(error.message);
+        } 
+      // Error handling is done via callbacks
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   // --------------------------------------
   //  UI Rendering
   // --------------------------------------
@@ -186,7 +206,7 @@ const BookingProcessDialog: React.FC<{
               }
               selectedOption={selectedOption}
               onSelectOption={setSelectedOption}
-              onConfirmOption={handleConfirmSelection}
+              onConfirmOption={step.id === 'service-b' ? handleConfirmSelection : handleConfirmHotelSelection}
               isConfirming={isConfirming}
               transportMode={bookingContext?.form.travelMode}
             />

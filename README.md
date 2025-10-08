@@ -1,5 +1,14 @@
 # FrankStack
 
+*📅 Update 8 October 2025 — Hotel Options Screen*
+
+* **Reached:** user hotel selection interface displayed successfully.
+* **Context:** frontend view integrated with backend saga flow for hotel choice.
+
+![HotelOptions](screenshots/HotelOptions.png)
+
+---
+
 *📅 Update 7 October 2025 — Screenshots*
 
 * **Reached:** Saga completed up to **transport pre-booking** (pre-calculated BookingEntry — not paid).

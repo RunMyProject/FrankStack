@@ -7,7 +7,7 @@
  * and manages the booking process state.
  * 
  * AUTHOR: Edoardo Sabatini
- * DATE: 07 October 2025
+ * DATE: 08 October 2025
  */
 
 import type { AIContext, ProcessResult } from '../types/chat';
@@ -122,7 +122,7 @@ export class BookingManager {
     }
   }
 
-  // Send user selection to backend
+  // Send user travel selection to backend
   async sendUserSelection(selectedTravelId: string): Promise<void> {
     if (!selectedTravelId || !this.sagaId) {
       throw new Error('Missing selection or saga ID');
@@ -166,6 +166,54 @@ export class BookingManager {
     } catch (error) {
       console.error('❌ [POST] Error confirming selection:', error);
       this.callbacks.onError(error instanceof Error ? error.message : 'Error confirming selection');
+      throw error;
+    }
+  }
+
+    // Send user hotel selection to backend
+  async sendUserHotelSelection(selectedHotelId: string): Promise<void> {
+    if (!selectedHotelId || !this.sagaId) {
+      throw new Error('Missing selectedHotelId selection or saga ID');
+    }
+
+    try {
+      const json = {
+        sagaCorrelationId: this.sagaId,
+        selectedHotelId
+      };
+
+      console.log('📤 [POST] Hotel Selection: Sending user JSON:', json);
+
+      const response = await fetch(`${this.urlProxy}/sendbookhotel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(json)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('✅ [POST] User Hotel Selection confirmed, resuming saga...');
+
+      // Update UI to show processing state after confirmation
+      this.steps = this.steps.map(step => {
+        if (step.id === 'service-c') {
+          return {
+            ...step,
+            status: 'processing',
+            description: 'Confirming saga-payment...'
+          };
+        }
+        return step;
+      });
+
+      this.callbacks.onStepUpdate([...this.steps]);
+
+    } catch (error) {
+      console.error('❌ [POST] Error confirming Hotel selection:', error);
+      this.callbacks.onError(error instanceof Error ? error.message : 'Error Hotel confirming selection');
       throw error;
     }
   }
@@ -236,40 +284,9 @@ export class BookingManager {
             this.callbacks.onUserInputRequired();
             return;
           }
-
-          // Look for hotel options if no transport found
-          const hotelKeys = ['hotels', 'accommodations', 'lodging', 'rooms'];
-          const hotelKey = hotelKeys.find(key => 
-            results[key as keyof typeof results] !== null && 
-            Array.isArray(results[key as keyof typeof results])
-          );
-
-          if (hotelKey) {
-            const hotelOptions = results[hotelKey as keyof typeof results];
-            console.log(`🏨 [SSE] Detected hotel options in key: ${hotelKey}`);
-
-            this.hotelOptions = hotelOptions as HotelOption[];
-
-            // Update saga step to wait for user input
-            this.steps = this.steps.map(step =>
-              step.id === 'service-c'
-                ? {
-                    ...step,
-                    status: 'user_input_required',
-                    description: 'Multiple accommodation options found — please select one.'
-                  }
-                : step
-            );
-
-            this.callbacks.onStepUpdate([...this.steps]);
-            this.callbacks.onHotelOptions([...this.hotelOptions]);
-            this.callbacks.onUserInputRequired();
-            return;
-          }
-
-          console.warn('⚠️ [SSE] No transport or hotel options found');
+          console.warn('⚠️ [SSE] No transport list options found');
           return;
-        }
+        } // CONFIRMED (TRAVEL RESULTS)
         
         // TRANSPORT_CONFIRMED from Java listenerBookTravel (after user selection)
         if (status === 'TRANSPORT_CONFIRMED') {          
@@ -307,31 +324,54 @@ export class BookingManager {
           // Stream stays open - waiting for accommodation
           console.log('⏳ [SSE] Waiting for accommodation confirmation...');
           return;
-        }
+        } // TRANSPORT_CONFIRMED
 
-        // HOTEL_CONFIRMED - new status from Java listenerBookAccommodation for hotels
+        // HOTEL_CONFIRMED - new status from Java listenerBookAccommodation for HotelResults
         if (status === 'HOTEL_CONFIRMED') {
           console.log('🏨 [SSE] Hotel confirmed by backend');
           console.log('📦 [SSE] Full booking message:', bookingMessage);
 
           // Extract REAL booked data from sagaContext.bookingEntry
-          const bookingEntry = bookingMessage?.sagaContext?.bookingEntry;
+          const { hotelResults } = bookingMessage;
           
-          console.log('🏨 [SSE] Hotel booking entry (REAL booked data):', bookingEntry);
-
-          if (!bookingEntry) {
-            console.warn('⚠️ [SSE] No bookingEntry found in sagaContext for hotel');
+          if (!hotelResults) {
+            console.warn('⚠️ [SSE] No hotel list options found');
+            console.warn('⚠️ [SSE] No hotelResults found in sagaContext for hotel');
             return;
           }
 
-          // Update UI with hotel data
+          this.hotelOptions = hotelResults.hotels as HotelOption[];
+
+          console.log('🏨 [SSE] Hotel List Options:', this.hotelOptions);
+
+          // Update saga step to wait for user input
+          this.steps = this.steps.map(step =>
+            step.id === 'service-c'
+              ? {
+                  ...step,
+                  status: 'user_input_required',
+                  description: 'Multiple accommodation options found — please select one.'
+                }
+              : step
+          );
+
+          this.callbacks.onStepUpdate([...this.steps]);
+          this.callbacks.onHotelOptions([...this.hotelOptions]);
+          this.callbacks.onUserInputRequired();
+          
+          return;       
+        } // HOTEL_CONFIRMED - HOTEL RESULTS
+
+        /* 
+        TODO:
+        Update UI with HotelResults data
           this.steps = this.steps.map(step => {
             if (step.id === 'service-c') {
               return {
                 ...step,
                 status: 'completed',
-                description: 'Hotel booking confirmed',
-                bookingEntry: bookingEntry
+                description: 'HotelResults confirmed',
+                hotelResults: hotelResults
               };
             }
             return step;
@@ -339,10 +379,10 @@ export class BookingManager {
 
           this.callbacks.onStepUpdate([...this.steps]);
 
-          // Stream stays open - waiting for final CONFIRMED
-          console.log('⏳ [SSE] Waiting for final confirmation...');
+          // Stream stays open - waiting for HOTEL BOOKING CONFIRMED
+          console.log('⏳ [SSE] Waiting for HOTEL BOOKING confirmation...');
           return;
-        }
+          */
 
         // Final CONFIRMED from Java listener (accommodation)
         if (status === 'CONFIRMED') {

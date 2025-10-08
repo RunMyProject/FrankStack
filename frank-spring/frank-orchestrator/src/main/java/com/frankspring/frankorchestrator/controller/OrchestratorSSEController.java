@@ -17,7 +17,7 @@ package com.frankspring.frankorchestrator.controller;
  * - Kafka response handling via FrankKafkaListener
  * 
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -270,7 +270,18 @@ public class OrchestratorSSEController {
     /**
      * sendBookHotel
      * -----------------------
-     * Continues saga after user selects hotel option.
+     * Continues the Saga after the user selects a hotel option.
+     * 
+     * Flow:
+     * 1️⃣ Extracts sagaCorrelationId and selectedHotelId from request.
+     * 2️⃣ Retrieves existing saga from Hazelcast storage.
+     * 3️⃣ Updates saga context with selected hotel and sets status to HOTEL_CONFIRMED.
+     * 4️⃣ Sends updated BookingMessage to Kafka Hotel Producer.
+     * 5️⃣ Notifies SSE client (hotel confirmed, payment step starting soon).
+     * 6️⃣ Sends fictitious call to payment producer to simulate next saga step.
+     * 7️⃣ Notifies SSE client for payment step.
+     * 8️⃣ Adds extra logging for clarity.
+     * 9️⃣ Returns OK response with next saga step indication.
      */
     @PostMapping("/sendbookhotel")
     public ResponseEntity<Map<String, Object>> sendBookHotel(@RequestBody Map<String, Object> requestBody) {
@@ -307,8 +318,7 @@ public class OrchestratorSSEController {
             // 4️⃣ Send to Kafka for hotel confirmation
             String hotelServiceUrl = "http://localhost:" 
                                     + appPropertiesComponent.getKafkaProducerPort() 
-                                    + "/kafka/bookhotel/";
-
+                                    + "/kafka/bookhotel";
             restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [sendbookhotel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
 
@@ -324,7 +334,6 @@ public class OrchestratorSSEController {
             String paymentServiceUrl = "http://localhost:" 
                                     + appPropertiesComponent.getKafkaProducerPort() 
                                     + "/kafka/startpayment";
-
             restTemplate.postForObject(paymentServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [sendbookhotel] Fictitious call sent to payment producer: " + paymentServiceUrl);
 
