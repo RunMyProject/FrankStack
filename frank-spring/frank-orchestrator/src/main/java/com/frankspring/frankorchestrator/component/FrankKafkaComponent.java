@@ -12,12 +12,13 @@ package com.frankspring.frankorchestrator.component;
  *   emitting because saga may continue with further steps.
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
 
 import java.time.Instant;
 import java.util.Map;
@@ -42,6 +43,12 @@ public class FrankKafkaComponent {
     // Use Spring-injected ObjectMapper (configured in JacksonConfig with JavaTimeModule)
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private AppPropertiesComponent appPropertiesComponent;
+
+    @Autowired
+    private RestTemplate restTemplate;
 
     /**
      * 🎧 Kafka Listener
@@ -122,6 +129,22 @@ public class FrankKafkaComponent {
             // The orchestrator / frontend contract expects the stream to remain open for subsequent steps.
 
             System.out.println("✅ [KAFKA-LISTENER] Saga sent transport confirmed for: " + sagaCorrelationId);
+
+            // 7️⃣ Send to Hotel producer
+            String hotelServiceUrl = "http://localhost:" 
+                                    + appPropertiesComponent.getKafkaProducerPort() 
+                                    + "/kafka/sendhotel";
+
+            restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
+            System.out.println("🚀 [listenerBookTravel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
+
+            // 8️⃣ Notify SSE client
+            sseEmitterManager.emit(sagaCorrelationId, Map.of(
+                    "message", "Saga processing continued with hotel search started.",
+                    "status", "processing",
+                    "sagaCorrelationId", sagaCorrelationId,
+                    "timestamp", Instant.now().toString()
+            ));
 
         } catch (Exception e) {
             System.err.println("💥 [KAFKA-LISTENER] Error processing Kafka message: " + e.getMessage());

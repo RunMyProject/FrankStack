@@ -172,30 +172,10 @@ export class BookingManager {
 
     // Send user hotel selection to backend
   async sendUserHotelSelection(selectedHotelId: string): Promise<void> {
-    if (!selectedHotelId || !this.sagaId) {
-      throw new Error('Missing selectedHotelId selection or saga ID');
-    }
-
-    try {
-      const json = {
-        sagaCorrelationId: this.sagaId,
-        selectedHotelId
-      };
-
-      console.log('📤 [POST] Hotel Selection: Sending user JSON:', json);
-
-      const response = await fetch(`${this.urlProxy}/sendbookhotel`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(json)
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+     
+      if (!selectedHotelId || !this.sagaId) {
+        throw new Error('Missing selectedHotelId selection or saga ID');
       }
-
-      console.log('✅ [POST] User Hotel Selection confirmed, resuming saga...');
 
       // Update UI to show processing state after confirmation
       this.steps = this.steps.map(step => {
@@ -211,7 +191,28 @@ export class BookingManager {
 
       this.callbacks.onStepUpdate([...this.steps]);
 
-    } catch (error) {
+      try {
+          const json = {
+            sagaCorrelationId: this.sagaId,
+            selectedHotelId
+          };
+
+          console.log('📤 [POST] Hotel Selection: Sending user JSON:', json);
+
+          const response = await fetch(`${this.urlProxy}/sendbookhotel`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify(json)
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+        
+          console.log('✅ [POST] User Hotel Selection confirmed, resuming saga...');
+
+      } catch (error) {
       console.error('❌ [POST] Error confirming Hotel selection:', error);
       this.callbacks.onError(error instanceof Error ? error.message : 'Error Hotel confirming selection');
       throw error;

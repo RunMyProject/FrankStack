@@ -233,22 +233,6 @@ public class OrchestratorSSEController {
                     "timestamp", Instant.now().toString()
             ));
 
-            // 7️⃣ Send to Hotel producer
-            String hotelServiceUrl = "http://localhost:" 
-                                    + appPropertiesComponent.getKafkaProducerPort() 
-                                    + "/kafka/sendhotel";
-
-            restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
-            System.out.println("🚀 [sendbooktravel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
-
-            // 8️⃣ Notify SSE client
-            sseEmitterManager.emit(sagaCorrelationId, Map.of(
-                    "message", "Saga processing continued with hotel search started.",
-                    "status", "processing",
-                    "sagaCorrelationId", sagaCorrelationId,
-                    "timestamp", Instant.now().toString()
-            ));
-
             // 9️⃣ Return OK response
             return ResponseEntity.ok(Map.of(
                     "status", "ok",
