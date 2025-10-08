@@ -5,6 +5,8 @@
 * **Reached:** user hotel selection interface displayed successfully.
 * **Context:** frontend view integrated with backend saga flow for hotel choice.
 
+**Screenshot:**
+
 ![HotelOptions](screenshots/HotelOptions.png)
 
 ---
@@ -15,7 +17,7 @@
 * **System:** proposes the **top 3** travel options for user refinement.
 * **Streaming:** unidirectional **SSE** (backend → frontend). User changes are POSTed to **Kafka** and processed by Spring microservices.
 
-**Screenshots (add to `screenshots/`):**
+**Screenshots:**
 
 ![SagaTransportService](screenshots/SagaTransportService.png)
 
