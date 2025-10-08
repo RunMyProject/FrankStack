@@ -19,8 +19,9 @@ import java.util.UUID;
  * - Used within BookingMessage or BookingUtils to encapsulate individual bookings.
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,6 +31,7 @@ public class BookingEntry {
     private String id;                     // unique booking reference (UUID)
     private String type;                   // plane/train/bus/car/space
     private String reference;              // flightNumber, trainNumber, etc.
+    private String companyName;            // airline or transport company name
     private double price;                  // final price = unitPrice * people
     private int people;                    // number of people
     private Instant bookedAt;              // timestamp of the booking
@@ -45,6 +47,7 @@ public class BookingEntry {
      *
      * @param type Travel type: "plane", "train", etc.
      * @param reference Reference from model (flightNumber, trainNumber, etc.)
+     * @param companyName Airline or transport company name
      * @param unitPrice Price per person
      * @param people Number of people
      * @param tripDeparture Departure city
@@ -57,6 +60,7 @@ public class BookingEntry {
     public static BookingEntry of(
             String type,
             String reference,
+            String companyName,
             double unitPrice,
             int people,
             String tripDeparture,
@@ -69,6 +73,7 @@ public class BookingEntry {
                 .id(UUID.randomUUID().toString())
                 .type(type)
                 .reference(reference)
+                .companyName(companyName)
                 .price(unitPrice * people)
                 .people(people)
                 .tripDeparture(tripDeparture)

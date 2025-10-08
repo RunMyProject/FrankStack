@@ -4,15 +4,19 @@ package com.frankspring.frankorchestrator.models.results;
  * FlightRecord.java
  * -----------------------
  * Immutable data record representing a flight.
- * 
+ *
  * RESPONSIBILITIES:
  * - Acts as a read-only data carrier object (DCO) for transport information.
  * - Designed to be immutable: once created, its values cannot be changed.
  * - Holds flight information that can later be persisted or retrieved from a database.
  * - Conceptually similar to a DAO, but focused purely on data transport, not business logic.
- * 
+ *
+ * CHANGELOG:
+ * - 08 October 2025: Renamed field "airline" to "companyName" for better consistency
+ *   with other transport record types (train, bus, car, space).
+ *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 08 October 2025
  */
 
 import java.util.List;
@@ -21,7 +25,7 @@ import java.util.Arrays;
 public record FlightRecord(
         String id,
         String type,
-        String airline,
+        String companyName,
         String flightNumber,
         String departureTime,
         String arrivalTime,

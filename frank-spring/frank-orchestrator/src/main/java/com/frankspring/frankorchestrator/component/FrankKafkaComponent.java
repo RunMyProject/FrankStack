@@ -130,7 +130,7 @@ public class FrankKafkaComponent {
 
             System.out.println("✅ [KAFKA-LISTENER] Saga sent transport confirmed for: " + sagaCorrelationId);
 
-            // 7️⃣ Send to Hotel producer
+            // 1️⃣ Send to Hotel producer
             String hotelServiceUrl = "http://localhost:" 
                                     + appPropertiesComponent.getKafkaProducerPort() 
                                     + "/kafka/sendhotel";
@@ -138,7 +138,7 @@ public class FrankKafkaComponent {
             restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [listenerBookTravel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
 
-            // 8️⃣ Notify SSE client
+            // 2️⃣ Notify SSE client
             sseEmitterManager.emit(sagaCorrelationId, Map.of(
                     "message", "Saga processing continued with hotel search started.",
                     "status", "processing",

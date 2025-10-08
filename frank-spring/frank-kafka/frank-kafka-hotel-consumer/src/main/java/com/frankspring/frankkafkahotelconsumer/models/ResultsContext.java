@@ -12,7 +12,7 @@ package com.frankspring.frankkafkahotelconsumer.models;
  * - Facilitates frontend/backend testing and integration without altering underlying data.
  * 
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import com.frankspring.frankkafkahotelconsumer.models.results.*;
@@ -28,7 +28,7 @@ public final class ResultsContext {
      * Retrieve mock hotels
      * @return List of HotelRecord objects
      */
-    public static List<HotelRecord> getHotels(FillForm form) {
-        return HotelRecord.generateMockHotels(form);
+    public static List<HotelRecord> getHotels(FillForm form, String userLang) {
+        return HotelRecord.generateMockHotels(form, userLang);
     }
 }

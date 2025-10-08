@@ -10,22 +10,19 @@ package com.frankspring.frankkafkahotelconsumer.listener;
  * - Handles incoming messages for business logic (availability, reservations, updates)
  * - Spring Component managed by Spring Boot
  *
- * -----------------------
- * Kafka listener component for FrankStack Travel Kafka Consumer.
- *
  * RESPONSIBILITIES:
- * - Listens to travel booking events from Kafka topics.
+ * - Listens to booking events from Kafka topics.
  * - Immediately sets saga status to CONSUMER_IN_PROGRESS.
- * - Deserializes incoming JSON string into BookingResponse or BookingMessage.
- * - Performs the internal "dirty work" (mock backend logic) for travel search.
- * - Uses BookingUtils to create a BookingEntry for booking requests.
- * - Sends confirmation message back via KafkaProducerService.
- * - Logs key steps and errors to the console.
+ * - Deserializes incoming JSON into BookingMessage.
+ * - Performs internal backend logic (mock data generation) for hotel search.
+ * - Uses BookingUtils to create a HotelBookingEntry for booking requests.
+ * - Sends confirmation messages back via KafkaProducerService.
+ * - Logs key steps and errors to console.
  * - Simulates processing delays with Thread.sleep().
- * - BookingEntry is now stored in SagaContext for state tracking.
+ * - BookingEntry is stored in SagaContext for state tracking.
  *     
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import com.frankspring.frankkafkahotelconsumer.models.*;
@@ -50,9 +47,9 @@ public class FrankKafkaListener {
 
     /**
      * Main listener for hotel search messages.
-     * Simulates backend by generating mock results based on travelMode.
+     * Simulates backend by generating mock hotel results.
      *
-     * @param data JSON message received from Kafka topic "frank-kafka-hotel"
+     * @param data JSON message from Kafka topic "frank-kafka-hotel"
      */
     @KafkaListener(topics = "frank-kafka-hotel", groupId = "frank-kafka-group")
     void listener(String data) {
@@ -67,7 +64,7 @@ public class FrankKafkaListener {
                     .status(SagaStatus.CONSUMER_IN_PROGRESS)
                     .build();
 
-            System.out.println("🧩 [CONSUMER] HotelBookingResponse status set to CONSUMER_IN_PROGRESS:");
+            System.out.println("🧩 [CONSUMER] Status set to CONSUMER_IN_PROGRESS:");
             System.out.println(hotelBookingResponse);
 
             performDirtyWork(hotelBookingResponse, bookingMessage);
@@ -77,7 +74,6 @@ public class FrankKafkaListener {
             System.out.println("✅ [CONSUMER] Finished processing HotelBookingResponse for sagaCorrelationId: "
                     + hotelBookingResponse.getSagaCorrelationId());
 
-            // Send response back to Kafka
             kafkaProducerService.sendMessage(hotelBookingResponse);
 
         } catch (Exception e) {
@@ -87,13 +83,16 @@ public class FrankKafkaListener {
     }
 
     /**
-     * Simulates backend "dirty work" by populating the Results object
-     * with mock data according to the requested travelMode.
+     * Simulates backend "dirty work" by populating mock hotel results
+     * according to the FillForm.
      *
-     * @param hotelBookingResponse The response object to populate
-     * @param bookingMessage  The original booking message from Kafka
+     * @param hotelBookingResponse Response object to populate
+     * @param bookingMessage       Original booking message from Kafka
      */
     private void performDirtyWork(HotelBookingResponse hotelBookingResponse, BookingMessage bookingMessage) {
+        
+        String userLang = "English"; // TO DO
+
         BookingContext context = bookingMessage.getBookingContext();
         if (context == null || context.getFillForm() == null) {
             System.out.println("⚠️ [DIRTY WORK] Missing booking context or form.");
@@ -102,9 +101,7 @@ public class FrankKafkaListener {
 
         FillForm form = context.getFillForm();
         HotelResults hotelResults = new HotelResults();
-
-        // Generate hotels based on form
-        hotelResults.setHotels(ResultsContext.getHotels(form));
+        hotelResults.setHotels(ResultsContext.getHotels(form, userLang));
 
         hotelBookingResponse.setHotelResults(hotelResults);
 
@@ -113,13 +110,16 @@ public class FrankKafkaListener {
     }
 
     /**
-     * Listener for actual booking requests.
-     * Uses BookingUtils to generate a BookingEntry with calculated price and people count.
+     * Listener for actual hotel booking requests.
+     * Uses BookingUtils.findByHotelId to generate a HotelBookingEntry.
      *
-     * @param data JSON message received from Kafka topic "frank-kafka-book-travel"
+     * @param data JSON message from Kafka topic "frank-kafka-book-hotel"
      */
     @KafkaListener(topics = "frank-kafka-book-hotel", groupId = "frank-kafka-group")
     void bookListener(String data) {
+
+        String userLang = "English"; // TO DO
+
         System.out.println("📥 [CONSUMER] Received raw message from Kafka:");
         System.out.println(data);
 
@@ -128,25 +128,23 @@ public class FrankKafkaListener {
             bookingMessage.setStatus(SagaStatus.CONSUMER_IN_PROGRESS);
 
             FillForm form = bookingMessage.getBookingContext().getFillForm();
-            String travelMode = form.getTravelMode();
-            String travelID = bookingMessage.getSagaContext().getSelectedTravelId();
+            String hotelId = bookingMessage.getSagaContext().getSelectedHotelId();
 
-            // Use the enriched version of BookingUtils
-            Optional<HotelBookingEntry> bookedHotelEntry = BookingUtils.findByTravelId(travelMode, travelID, form);
+            // Use BookingUtils.findByHotelId
+            Optional<HotelBookingEntry> bookedHotelEntry = BookingUtils.findByHotelId(hotelId, form, userLang);
 
             if (bookedHotelEntry.isPresent()) {
                 HotelBookingEntry entry = bookedHotelEntry.get();
-                bookingMessage.getSagaContext().setBookedTravelId(entry.getId());
                 bookingMessage.getSagaContext().setHotelBookingEntry(entry);
 
-                System.out.println("✅ [CONSUMER] Booking completed for sagaCorrelationId: "
+                System.out.println("✅ [CONSUMER] Hotel booking completed for sagaCorrelationId: "
                         + bookingMessage.getSagaCorrelationId());
                 System.out.println("🧳 [DETAILS] " + entry.getTripDeparture() + " → " + entry.getTripDestination() +
                         " | People: " + entry.getPeople() +
                         " | Departure: " + entry.getDateTimeRoundTripDeparture() +
                         " | Return: " + entry.getDateTimeRoundTripReturn());
             } else {
-                System.out.println("⚠️ [CONSUMER] Booking not found for travelId: " + travelID);
+                System.out.println("⚠️ [CONSUMER] Hotel booking not found for hotelId: " + hotelId);
             }
 
             Thread.sleep(2500); // simulate processing delay

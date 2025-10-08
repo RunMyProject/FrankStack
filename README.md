@@ -2,12 +2,24 @@
 
 *📅 Update 8 October 2025 — Hotel Options Screen*
 
+⚠️ **Note:** this is a first working cycle; a few bugs may still be present.
+
 * **Reached:** user hotel selection interface displayed successfully.
 * **Context:** frontend view integrated with backend saga flow for hotel choice.
 
-**Screenshot:**
+## Screenshots
 
-![HotelOptions](screenshots/HotelOptions.png)
+### 1. Hotel Step - Selection
+![HotelStepSelection](screenshots/HotelStepSelection.png)
+*Displays available hotel options for the user to select from.*
+
+### 2. Hotel Step - Waiting
+![HotelStepWaiting](screenshots/HotelStepWaiting.png)
+*Indicates the system is processing the hotel selection.*
+
+### 3. Hotel Step - Booked
+![HotelStepBooked](screenshots/HotelStepBooked.png)
+*Shows the interface after a hotel has been successfully booked.*
 
 ---
 

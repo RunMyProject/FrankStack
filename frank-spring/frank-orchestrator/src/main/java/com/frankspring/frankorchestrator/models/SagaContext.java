@@ -8,7 +8,7 @@ package com.frankspring.frankorchestrator.models;
  * BookingEntry is now included to track booking details.
  *      
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import lombok.AllArgsConstructor;
@@ -27,4 +27,5 @@ public class SagaContext {
     private String selectedHotelId;
     private String bookedHotelId;
     private BookingEntry bookingEntry;
+    private HotelBookingEntry hotelBookingEntry;
 }

@@ -8,11 +8,16 @@ package com.frankspring.frankkafkatravelconsumer.models.results;
  * RESPONSIBILITIES:
  * - Acts as a read-only data carrier object (DCO) for transport information.
  * - Designed to be immutable: once created, its values cannot be changed.
- * - Holds flight information that can later be persisted or retrieved from a database.
+ * - Holds train travel information that can later be persisted or retrieved from a database.
  * - Conceptually similar to a DAO, but focused purely on data transport, not business logic.
- * 
+ *
+ * CHANGELOG:
+ * - 08 October 2025: Renamed field "operator" to "companyName" for consistency
+ *   with other transport records (flight, bus, car, space).
+ * - Added a French train to demonstrate Paris destination.
+ *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 08 October 2025
  */
 
 import java.util.List;
@@ -21,7 +26,7 @@ import java.util.Arrays;
 public record TrainRecord(
         String id,
         String type,
-        String operator,
+        String companyName,
         String trainNumber,
         String departureTime,
         String arrivalTime,
@@ -30,6 +35,7 @@ public record TrainRecord(
         int stops,
         List<String> benefits
 ) {
+
     public static List<TrainRecord> generateMockTrains() {
         return Arrays.asList(
                 new TrainRecord(
@@ -55,6 +61,18 @@ public record TrainRecord(
                         65,
                         0,
                         Arrays.asList("WiFi", "Snack service", "Extra legroom")
+                ),
+                new TrainRecord(
+                        "train-paris",
+                        "train",
+                        "SNCF",
+                        "TGV9012",
+                        "08:00",
+                        "12:00",
+                        "4h 0m",
+                        120,
+                        0,
+                        Arrays.asList("WiFi", "First Class seat", "Meal service")
                 )
         );
     }

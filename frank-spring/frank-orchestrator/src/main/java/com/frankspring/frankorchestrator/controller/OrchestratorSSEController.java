@@ -233,7 +233,7 @@ public class OrchestratorSSEController {
                     "timestamp", Instant.now().toString()
             ));
 
-            // 9️⃣ Return OK response
+            // 7️⃣ Return OK response
             return ResponseEntity.ok(Map.of(
                     "status", "ok",
                     "message", "Saga processing continued with hotel search started.",
@@ -306,7 +306,7 @@ public class OrchestratorSSEController {
             restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [sendbookhotel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
 
-            // 5️⃣ Notify SSE client
+            // 6️⃣ Notify SSE client
             sseEmitterManager.emit(sagaCorrelationId, Map.of(
                     "message", "Hotel confirmed. Payment step will start soon.",
                     "status", "processing",
@@ -314,25 +314,7 @@ public class OrchestratorSSEController {
                     "timestamp", Instant.now().toString()
             ));
 
-            // 6️⃣ Fictitious call to start payment step
-            String paymentServiceUrl = "http://localhost:" 
-                                    + appPropertiesComponent.getKafkaProducerPort() 
-                                    + "/kafka/startpayment";
-            restTemplate.postForObject(paymentServiceUrl, bookingMessage, String.class);
-            System.out.println("🚀 [sendbookhotel] Fictitious call sent to payment producer: " + paymentServiceUrl);
-
-            // 7️⃣ Notify SSE client for payment step
-            sseEmitterManager.emit(sagaCorrelationId, Map.of(
-                    "message", "Saga processing continued with payment step (fictitious).",
-                    "status", "processing",
-                    "sagaCorrelationId", sagaCorrelationId,
-                    "timestamp", Instant.now().toString()
-            ));
-
-            // 8️⃣ Extra logging
-            System.out.println("📌 [sendbookhotel] Saga ongoing: hotel confirmed, payment step started (fictitious)");
-
-            // 9️⃣ Return OK response
+            // 7️⃣ Return OK response
             return ResponseEntity.ok(Map.of(
                     "status", "ok",
                     "message", "Saga processing continued with hotel confirmed and payment step (fictitious).",

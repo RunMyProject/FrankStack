@@ -21,7 +21,7 @@
  * -----------------------
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  *
  */
 
@@ -34,7 +34,6 @@ export interface CommonBookingEntry {
   bookedAt: string;
   tripDeparture: string; 
   tripDestination: string;
-
   dateTimeRoundTripDeparture: string;
   dateTimeRoundTripReturn: string;
 }
@@ -59,7 +58,7 @@ export interface HotelBookingEntry extends CommonBookingEntry {
 
 export interface HotelOption {
   id: string;
-  name: string;
+  hotelName: string;
   stars: number; // 1-7
   address: string;
   duration: number; // nights
@@ -78,14 +77,13 @@ export interface HotelOption {
 export interface TransportOption {
   id: string;
   type: string; // e.g. "plane", "train", "bus", "car", "space"
-  airline?: string;
+  companyName?: string;
   flightNumber?: string;
   duration: string;
   price: number;
   stops: number;
   seatClass: string;
   benefits: string[];
-
   departureTime: string;
   arrivalTime: string;
 }

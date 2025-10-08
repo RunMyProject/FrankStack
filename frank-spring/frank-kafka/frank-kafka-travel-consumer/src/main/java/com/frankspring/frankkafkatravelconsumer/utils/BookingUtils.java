@@ -10,9 +10,11 @@ package com.frankspring.frankkafkatravelconsumer.utils;
  * CHANGELOG:
  * - 07 October 2025: Refactored to accept FillForm instead of just "people"
  *   in order to enrich BookingEntry with travel dates, cities, and luggage info.
+ * - 08 October 2025: Added support for companyName field in BookingEntry
+ *   for more realistic transport provider details (e.g., ITA Airways, Trenitalia).
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import com.frankspring.frankkafkatravelconsumer.models.BookingEntry;
@@ -54,6 +56,7 @@ public class BookingUtils {
                         .map(f -> BookingEntry.of(
                                 travelMode,
                                 f.flightNumber(),
+                                f.companyName(),
                                 f.price(),
                                 people,
                                 tripDeparture,
@@ -70,6 +73,7 @@ public class BookingUtils {
                         .map(t -> BookingEntry.of(
                                 travelMode,
                                 t.trainNumber(),
+                                t.companyName(),
                                 t.price(),
                                 people,
                                 tripDeparture,
@@ -86,6 +90,7 @@ public class BookingUtils {
                         .map(b -> BookingEntry.of(
                                 travelMode,
                                 b.busNumber(),
+                                b.companyName(),
                                 b.price(),
                                 people,
                                 tripDeparture,
@@ -102,6 +107,7 @@ public class BookingUtils {
                         .map(c -> BookingEntry.of(
                                 travelMode,
                                 c.model(),
+                                c.companyName(),
                                 c.price(),
                                 people,
                                 tripDeparture,
@@ -118,6 +124,7 @@ public class BookingUtils {
                         .map(s -> BookingEntry.of(
                                 travelMode,
                                 s.missionName(),
+                                s.companyName(),
                                 s.price(),
                                 people,
                                 tripDeparture,

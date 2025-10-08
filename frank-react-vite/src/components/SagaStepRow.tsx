@@ -7,7 +7,7 @@
  * Bilingual labels (Italian / English) and Tailwind-based styling.
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import React from 'react';
@@ -141,21 +141,11 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
 
     // Otherwise it's a transport booking (has type property)
     const transportData = bookingData as BookingEntry;
-    let companyName = transportData.companyName || 'N/A';
-    
-    // Try to get company name from selected option if available
-    if (options && selectedOption) {
-      const selectedOpt = options.find(opt => opt.id === selectedOption && 'airline' in opt);
-      if (selectedOpt && typeof selectedOpt === 'object' && selectedOpt !== null) {
-        const transportOpt = selectedOpt as TransportOption;
-        companyName = transportOpt.airline || companyName;
-      }
-    }
-    
+
     return (
       <div className="mt-2 p-2 bg-white rounded border border-green-200">
         <div className="text-xs text-green-800 grid grid-cols-2 gap-1">
-          <div className="font-medium">Company: {companyName}</div>
+          <div className="font-medium">Company: {transportData.companyName}</div>
           <div><span className="font-medium">Ref:</span> {transportData.reference}</div>
           <div><span className="font-medium">Route:</span> {transportData.tripDeparture} → {transportData.tripDestination}</div>
           <div><span className="font-medium">Departure:</span> {formatDate(transportData.dateTimeRoundTripDeparture)}</div>

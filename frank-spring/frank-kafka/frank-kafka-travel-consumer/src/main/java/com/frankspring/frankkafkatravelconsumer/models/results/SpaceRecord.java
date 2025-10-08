@@ -10,9 +10,13 @@ package com.frankspring.frankkafkatravelconsumer.models.results;
  * - Designed to be immutable: once created, its values cannot be changed.
  * - Holds space travel information that can later be persisted or retrieved from a database.
  * - Conceptually similar to a DAO, but focused purely on data transport, not business logic.
- * 
+ *
+ * CHANGELOG:
+ * - 08 October 2025: Renamed field "company" to "companyName" for consistency
+ *   with other transport records (flight, train, bus, car).
+ *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 08 October 2025
  */
 
 import java.util.List;
@@ -21,7 +25,7 @@ import java.util.Arrays;
 public record SpaceRecord(
         String id,
         String type,
-        String company,
+        String companyName,
         String missionName,
         String departureTime,
         String arrivalTime,

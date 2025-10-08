@@ -5,7 +5,7 @@
  * Supports multi-vehicle types with dynamic emoji icons.
  *
  * Author: Edoardo Sabatini
- * Date: 05 October 2025
+ * Date: 08 October 2025
  */
 import React from 'react';
 
@@ -118,7 +118,7 @@ const TransportOptionsCard: React.FC<{
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                <span className="truncate">{opt.airline} {opt.flightNumber}</span>
+                <span className="truncate">{opt.companyName} {opt.flightNumber}</span>
                 {opt.stops === 0 && (
                   <span className="flex-shrink-0 px-1.5 py-0.5 text-xs bg-green-100 text-green-700 rounded">
                     Direct

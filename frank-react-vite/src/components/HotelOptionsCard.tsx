@@ -5,7 +5,7 @@
  * Supports star ratings and hotel amenities.
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 import React from 'react';
@@ -54,7 +54,7 @@ const HotelOptionsCard: React.FC<{
             />
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                <span className="truncate">{opt.name}</span>
+                <span className="truncate">{opt.hotelName}</span>
                 <span className="flex-shrink-0 text-xs">{getStarsDisplay(opt.stars)}</span>
               </div>
               <div className="text-xs text-gray-600 mt-0.5">

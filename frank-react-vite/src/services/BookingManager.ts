@@ -363,16 +363,29 @@ export class BookingManager {
           return;       
         } // HOTEL_CONFIRMED - HOTEL RESULTS
 
-        /* 
-        TODO:
-        Update UI with HotelResults data
+        // HOTEL_BOOKING_CONFIRMED - finale conferma prenotazione hotel (come TRANSPORT_CONFIRMED)
+        if (status === 'HOTEL_BOOKING_CONFIRMED') {
+          console.log('✅ [SSE] Hotel booking confirmed by backend');
+          console.log('📦 [SSE] Full booking message:', bookingMessage);
+
+          // Extract REAL booked hotel data from sagaContext.hotelBookingEntry
+          const hotelBookingEntry = bookingMessage?.sagaContext?.hotelBookingEntry;
+          
+          console.log('🏨 [SSE] Hotel Booking entry (REAL booked data):', hotelBookingEntry);
+
+          if (!hotelBookingEntry) {
+            console.warn('⚠️ [SSE] No hotelBookingEntry found in sagaContext');
+            return;
+          }
+
+          // Update UI with hotel data in the green recap box
           this.steps = this.steps.map(step => {
             if (step.id === 'service-c') {
               return {
                 ...step,
                 status: 'completed',
-                description: 'HotelResults confirmed',
-                hotelResults: hotelResults
+                description: 'Hotel booking confirmed',
+                bookingEntry: hotelBookingEntry // save real booked hotel data
               };
             }
             return step;
@@ -380,10 +393,10 @@ export class BookingManager {
 
           this.callbacks.onStepUpdate([...this.steps]);
 
-          // Stream stays open - waiting for HOTEL BOOKING CONFIRMED
-          console.log('⏳ [SSE] Waiting for HOTEL BOOKING confirmation...');
+          // Stream stays open - waiting for payment or final confirmation
+          console.log('⏳ [SSE] Waiting for payment/final confirmation...');
           return;
-          */
+        }
 
         // Final CONFIRMED from Java listener (accommodation)
         if (status === 'CONFIRMED') {
