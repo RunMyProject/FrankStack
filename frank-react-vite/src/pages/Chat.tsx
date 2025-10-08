@@ -6,13 +6,13 @@
  * Status updates are tracked with a single object { msg, status }.
  *
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 08 October 2025
  */
 
 // ===========================================
 // 🧪 TEST MODE CONFIGURATION
 // ===========================================
-const ENABLE_TEST_MODE = true; // Set to false to disable test mode
+const ENABLE_TEST_MODE = false; // Set to false to disable test mode
 // ===========================================
 
 // ===========================================
