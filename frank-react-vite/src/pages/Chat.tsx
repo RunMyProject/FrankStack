@@ -5,8 +5,8 @@
  * Handles user interactions, AI calls, debug panel, and reasoning panel.
  * Status updates are tracked with a single object { msg, status }.
  *
- * Author: Edoardo Sabatini
- * Date: 08 October 2025
+ * AUTHOR: Edoardo Sabatini
+ * DATE: 10 October 2025
  */
 
 // ===========================================
@@ -79,6 +79,7 @@ const TEST_BOOKING_DATA: AIContext = {
 // Base
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import type { ChatMessage, Provider, AIContext, AIStatus, ProcessResult } from "../types/chat";
+import type { StandardUserData } from '../types/saga';
 
 // Components
 import Header from "../components/Header";
@@ -95,6 +96,9 @@ import { useAI } from "../hooks/useAI";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatDateTime } from "../utils/datetime";
 import { sagaManager } from "../utils/BookingSagaManager";
+// NEW: Import the user data objects for test users
+
+import { UserTestDataEng, UserTestDataIta } from "../store/UserEdoardoDB";
 
 const Chat: React.FC = () => {
   // -----------------------------
@@ -110,9 +114,7 @@ const Chat: React.FC = () => {
   const [apiKey, setApiKey] = useState("");
 
   const [showReasoningPanel, setShowReasoningPanel] = useState(false);
-  const [currentProcessingContext, setCurrentProcessingContext] = useState<
-    AIContext | undefined
-  >(undefined);
+  const [currentProcessingContext, setCurrentProcessingContext] = useState<AIContext | undefined>(undefined);
 
   const [showProcessDialog, setShowProcessDialog] = useState(false);
   const [sagaTransactionId, setSagaTransactionId] = useState<string | null>(null);
@@ -212,7 +214,7 @@ const Chat: React.FC = () => {
 🚀 Avvio del processo Saga...`;
   };
 
-  const activateTestMode = useCallback((force: boolean) => {
+    const activateTestMode = useCallback((force: boolean) => {
     if(!force) if (!ENABLE_TEST_MODE || testModeActivated) return;
 
     console.log("🧪 Attivazione Test Mode");
@@ -228,6 +230,29 @@ const Chat: React.FC = () => {
       },
       output: generateTestSummary(TEST_BOOKING_DATA)
     };
+
+    // NEW: Select the appropriate user data object based on the determined language
+    const testUserData: StandardUserData = userLang === "English" ? UserTestDataEng : UserTestDataIta;
+
+    // --- Read current store state ---
+    const store = useAuthStore.getState();
+
+    if (store.savedPaymentMethods.length==0) {
+
+      console.log(`🧪 Initializing test user data: ${testUserData.username} with language: ${testUserData.defaultLanguage}`);
+
+      if (testUserData.defaultPaymentMethods?.length) {
+        testUserData.defaultPaymentMethods.forEach(card => {
+          store.addPaymentMethod(card);
+        });
+      }
+
+      store.printAllPaymentMethods();
+
+    } else {
+            console.log(`✅ Store already has data. Skipping test user initialization.`);
+            store.printAllPaymentMethods(); // Optional: just to debug current store state
+    }
 
     updateAIContext(testContext);
 
@@ -250,7 +275,7 @@ const Chat: React.FC = () => {
       startTestSagaTransaction(testContext);
     }, 1500); // Small delay to let user see the summary
 
-  }, [ENABLE_TEST_MODE, testModeActivated, userLang, updateAIContext]);
+  }, [ENABLE_TEST_MODE, testModeActivated, userLang, updateAIContext]); // userLang is still used here for the context if not overridden
 
   const startTestSagaTransaction = async (context: AIContext) => {
     try {

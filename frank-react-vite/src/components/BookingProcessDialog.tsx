@@ -17,6 +17,8 @@
  * 3. Orchestrator emits messages such as:
  *    - "Saga processing started" → Orchestrator finished, transport service begins.
  *    - "TRANSPORT_CONFIRMED" → Transport booked, continue to accommodation.
+ *    - "HOTEL_BOOKING_CONFIRMED" → Hotel booked, continue to payment.
+ *    - "PAYMENT_CONFIRMED" → Payment processed, saga finalizing.
  *    - "CONFIRMED" → Saga finished successfully, triggering onComplete().
  *    - "error" or "FAILED" → Saga failed, triggering onError().
  *
@@ -24,13 +26,14 @@
  * - Clear separation between storage (Hazelcast) and execution (orchestrator).
  * - Real-time updates via EventSource (SSE).
  * - Multi-step visualization using SagaStepRow components.
+ * - Payment processing with PaymentOptionsCard.
  * - Proper cleanup on dialog close or connection interruption.
  * - Internationalization-ready (English / Italian).
  *
  * Uses BookingManager for backend communication and displays the booking process.
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 08 October 2025
+ * DATE: 10 October 2025
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -38,6 +41,7 @@ import type { AIContext, ProcessResult } from '../types/chat';
 import type { TransportOption, HotelOption, SagaStep } from '../types/saga';
 import { BookingManager } from '../services/BookingManager';
 import SagaStepRow from './SagaStepRow';
+import { useAuthStore } from '../store/useAuthStore';
 
 // --------------------------------------
 //  BookingProcessDialog Component
@@ -61,6 +65,7 @@ const BookingProcessDialog: React.FC<{
   const [transportOptions, setTransportOptions] = useState<TransportOption[]>([]);
   const [hotelOptions, setHotelOptions] = useState<HotelOption[]>([]);
   const [isConfirming, setIsConfirming] = useState(false);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
 
   // Ref for BookingManager instance
   const bookingManagerRef = useRef<BookingManager | null>(null);
@@ -83,6 +88,7 @@ const BookingProcessDialog: React.FC<{
       setTransportOptions([]);
       setHotelOptions([]);
       setIsConfirming(false);
+      setTotalAmount(0);
     }
   }, [isOpen]);
 
@@ -102,6 +108,11 @@ const BookingProcessDialog: React.FC<{
       },
       onUserInputRequired: () => {
         setIsProcessing(false);
+        setSelectedOption(''); // Reset selection for new input
+      },
+      onPaymentRequired: (amount: number) => {
+        setTotalAmount(amount);
+        setSelectedOption('saved_card_1'); // Default to saved card
       },
       onCompleted: (result: ProcessResult) => {
         setHasCompleted(true);
@@ -134,7 +145,7 @@ const BookingProcessDialog: React.FC<{
   }, [isOpen, bookingContext, hasCompleted]);
 
   // --------------------------------------
-  //  Handle user selection confirmation
+  //  Handle user transport selection confirmation
   // --------------------------------------
   const handleConfirmSelection = async () => {
     if (!selectedOption || !bookingManagerRef.current) return;
@@ -153,8 +164,8 @@ const BookingProcessDialog: React.FC<{
     }
   };
 
-    // --------------------------------------
-  //  Handle user selection confirmation
+  // --------------------------------------
+  //  Handle user hotel selection confirmation
   // --------------------------------------
   const handleConfirmHotelSelection = async () => {
     if (!selectedOption || !bookingManagerRef.current) return;
@@ -168,6 +179,52 @@ const BookingProcessDialog: React.FC<{
           onError(error.message);
         } 
       // Error handling is done via callbacks
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
+  // --------------------------------------
+  //  Handle payment confirmation
+  // --------------------------------------
+  const handleConfirmPayment = async () => { // NEW: Rimuovi il parametro saveRequested da qui
+    if (!selectedOption || !bookingManagerRef.current) return;
+    setIsConfirming(true);
+
+    try {
+      let paymentId = selectedOption; // ID da usare per la chiamata
+      let paymentType = 'credit_card';
+
+      // NEW: If user selected 'new_card', pick the most recently saved card from the store.
+      // NOTE: store now keeps newest-first, so index 0 is the last added card.
+      if (selectedOption === 'new_card') {
+          const currentSavedMethods = useAuthStore.getState().savedPaymentMethods;
+          if (currentSavedMethods.length > 0) {
+
+              // PICK THE FIRST ELEMENT: newest-first ordering in the store.
+              const lastAddedCard = currentSavedMethods[0];
+              if (lastAddedCard) {
+                  paymentId = lastAddedCard.id;
+                  console.log("Using newly saved card ID for payment:", paymentId);
+              } else {
+                  throw new Error("No saved card found after 'new_card' selection.");
+              }
+          } else {
+              throw new Error("No saved payment methods available after 'new_card' selection.");
+          }
+      } else if (selectedOption === 'paypal') { 
+        paymentType = 'paypal';
+      } else if (selectedOption === 'bank_transfer') {
+        paymentType = 'bank_transfer';
+      }
+
+      // Use paymentId instead of selectedOption
+      await bookingManagerRef.current.sendPaymentDetails(paymentId, paymentType);
+      // State updates are handled via callbacks
+    } catch (error) {
+        if(error instanceof Error) {
+          onError(error.message);
+        } // Error handling is done via callbacks
     } finally {
       setIsConfirming(false);
     }
@@ -206,9 +263,15 @@ const BookingProcessDialog: React.FC<{
               }
               selectedOption={selectedOption}
               onSelectOption={setSelectedOption}
-              onConfirmOption={step.id === 'service-b' ? handleConfirmSelection : handleConfirmHotelSelection}
+              onConfirmOption={
+                step.id === 'service-b' ? handleConfirmSelection :
+                step.id === 'service-c' ? handleConfirmHotelSelection :
+                step.id === 'service-d' ? handleConfirmPayment :
+                () => {}
+              } 
               isConfirming={isConfirming}
               transportMode={bookingContext?.form.travelMode}
+              totalAmount={totalAmount}
             />
           ))}
         </div>

@@ -17,13 +17,38 @@
  * This file is part of the FrankStack project:
  * BookEntry microservice, Saga Orchestration, and AI Chat Interface.
  * HotelOption, BookingEntry, TransportOption, StepStatus, SagaStep
- * 
+ * Shared type definitions for AI context and payment methods.
  * -----------------------
  *
  * Author: Edoardo Sabatini
- * Date: 08 October 2025
+ * Date: 10 October 2025
  *
  */
+
+/**
+ * Represents a saved payment method in the store
+ */
+export interface SavedPaymentMethod {
+  id: string;                 // internal unique id, e.g., "card_1696970000000"
+  type: 'credit_card' | 'paypal' | 'bank_transfer';
+  lastFourDigits?: string;    // last 4 digits of the card
+  cardType?: 'visa' | 'mastercard' | 'amex';
+  token?: string;             // token returned from payment gateway (e.g., Stripe)
+  timestamp?: string;         // "DD/MM/YYYY HH:mm" format, for user display
+  isDefault: boolean;         // true if default card
+  expiryDate?: string;        // MM/YY format
+  cardholderName?: string;    // Full name on card
+}
+
+/**
+ * Standard user data
+ */
+export interface StandardUserData {
+  username: string;
+  password: string;
+  defaultPaymentMethods: SavedPaymentMethod[];
+  defaultLanguage: string;
+}
 
 export interface CommonBookingEntry {
   id: string;

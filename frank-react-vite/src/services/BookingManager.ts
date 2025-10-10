@@ -4,10 +4,10 @@
  * Backend Booking Manager implementing Two-Step Saga Pattern with Hazelcast storage.
  * 
  * Handles the communication with the orchestrator backend, SSE streaming,
- * and manages the booking process state.
+ * and manages the booking process state including payment processing.
  * 
  * AUTHOR: Edoardo Sabatini
- * DATE: 08 October 2025
+ * DATE: 10 October 2025
  */
 
 import type { AIContext, ProcessResult } from '../types/chat';
@@ -18,6 +18,7 @@ interface BookingManagerCallbacks {
   onTransportOptions: (options: TransportOption[]) => void;
   onHotelOptions: (options: HotelOption[]) => void;
   onUserInputRequired: () => void;
+  onPaymentRequired: (totalAmount: number) => void;
   onCompleted: (result: ProcessResult) => void;
   onError: (error: string) => void;
 }
@@ -52,6 +53,13 @@ export class BookingManager {
       id: 'service-c',
       name: 'Accommodation Service',
       description: 'Processing hotel booking',
+      status: 'pending',
+      bookingEntry: {} as BookingEntry
+    },
+    {
+      id: 'service-d',
+      name: 'Payment Service',
+      description: 'Awaiting payment confirmation',
       status: 'pending',
       bookingEntry: {} as BookingEntry
     }
@@ -170,7 +178,7 @@ export class BookingManager {
     }
   }
 
-    // Send user hotel selection to backend
+  // Send user hotel selection to backend
   async sendUserHotelSelection(selectedHotelId: string): Promise<void> {
      
       if (!selectedHotelId || !this.sagaId) {
@@ -183,7 +191,7 @@ export class BookingManager {
           return {
             ...step,
             status: 'processing',
-            description: 'Confirming saga-payment...'
+            description: 'Confirming hotel booking...'
           };
         }
         return step;
@@ -215,6 +223,55 @@ export class BookingManager {
       } catch (error) {
       console.error('❌ [POST] Error confirming Hotel selection:', error);
       this.callbacks.onError(error instanceof Error ? error.message : 'Error Hotel confirming selection');
+      throw error;
+    }
+  }
+
+  // Send payment details to backend
+  async sendPaymentDetails(paymentMethodId: string, paymentType: string): Promise<void> {
+    if (!paymentMethodId || !this.sagaId) {
+      throw new Error('Missing payment details or saga ID');
+    }
+
+    // Update UI to show processing state
+    this.steps = this.steps.map(step => {
+      if (step.id === 'service-d') {
+        return {
+          ...step,
+          status: 'processing',
+          description: 'Processing payment...'
+        };
+      }
+      return step;
+    });
+
+    this.callbacks.onStepUpdate([...this.steps]);
+
+    try {
+      const json = {
+        sagaCorrelationId: this.sagaId,
+        paymentMethodId,
+        paymentType
+      };
+
+      console.log('📤 [POST] Payment Details: Sending JSON:', json);
+
+      const response = await fetch(`${this.urlProxy}/paymentsprocess`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(json)
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('✅ [POST] Payment submitted, awaiting confirmation...');
+
+    } catch (error) {
+      console.error('❌ [POST] Error processing payment:', error);
+      this.callbacks.onError(error instanceof Error ? error.message : 'Error processing payment');
       throw error;
     }
   }
@@ -363,7 +420,7 @@ export class BookingManager {
           return;       
         } // HOTEL_CONFIRMED - HOTEL RESULTS
 
-        // HOTEL_BOOKING_CONFIRMED - finale conferma prenotazione hotel (come TRANSPORT_CONFIRMED)
+        // HOTEL_BOOKING_CONFIRMED - final hotel booking confirmation (like TRANSPORT_CONFIRMED)
         if (status === 'HOTEL_BOOKING_CONFIRMED') {
           console.log('✅ [SSE] Hotel booking confirmed by backend');
           console.log('📦 [SSE] Full booking message:', bookingMessage);
@@ -388,17 +445,59 @@ export class BookingManager {
                 bookingEntry: hotelBookingEntry // save real booked hotel data
               };
             }
+            if (step.id === 'service-d') {
+              return {
+                ...step,
+                status: 'user_input_required',
+                description: 'Please select payment method'
+              };
+            }
             return step;
           });
 
           this.callbacks.onStepUpdate([...this.steps]);
 
-          // Stream stays open - waiting for payment or final confirmation
-          console.log('⏳ [SSE] Waiting for payment/final confirmation...');
+          // Calculate total amount for payment
+          const transportStep = this.steps.find(s => s.id === 'service-b');
+          const accommodationStep = this.steps.find(s => s.id === 'service-c');
+          const transportPrice = transportStep?.bookingEntry?.price || 0;
+          const accommodationPrice = accommodationStep?.bookingEntry?.price || hotelBookingEntry?.price || 0;
+          const totalAmount = transportPrice + accommodationPrice;
+
+          // Trigger payment selection UI
+          this.callbacks.onPaymentRequired(totalAmount);
+          this.callbacks.onUserInputRequired();
+
+          // Stream stays open - waiting for payment
+          console.log('⏳ [SSE] Waiting for payment selection...');
           return;
         }
 
-        // Final CONFIRMED from Java listener (accommodation)
+        // PAYMENT_CONFIRMED - payment processed successfully
+        if (status === 'PAYMENT_CONFIRMED') {
+          console.log('✅ [SSE] Payment confirmed by backend');
+          console.log('📦 [SSE] Payment confirmation:', bookingMessage);
+
+          // Update payment step to completed
+          this.steps = this.steps.map(step => {
+            if (step.id === 'service-d') {
+              return {
+                ...step,
+                status: 'completed',
+                description: '✅ Payment processed successfully'
+              };
+            }
+            return step;
+          });
+
+          this.callbacks.onStepUpdate([...this.steps]);
+
+          // Stream stays open - waiting for final confirmation
+          console.log('⏳ [SSE] Waiting for final confirmation...');
+          return;
+        }
+
+        // Final CONFIRMED from Java listener (complete saga)
         if (status === 'CONFIRMED') {
           console.log('📥 [SSE] CONFIRMED received');
           console.log('📦 [SSE] Booking message:', bookingMessage);
@@ -417,18 +516,18 @@ export class BookingManager {
             return;
           }
 
-          // This should be the real final confirmation with bookingEntry
+          // This should be the real final confirmation
           console.log('✅ [SSE] Processing final confirmation');
 
-          // if service-c not yet marked completed, do it now
-          if (!this.steps.some(s => s.id === 'service-c' && s.status === 'completed')) {
+          // if service-d not yet marked completed, do it now
+          if (!this.steps.some(s => s.id === 'service-d' && s.status === 'completed')) {
             this.steps = this.steps.map(step =>
-              step.id === 'service-c'
+              step.id === 'service-d'
                 ? { 
                     ...step, 
                     status: 'completed', 
-                    description: '✅ Accommodation booking completed',
-                     bookingMessage 
+                    description: '✅ Payment completed',
+                    bookingMessage 
                   }
                 : step
             );
@@ -436,8 +535,7 @@ export class BookingManager {
 
           this.hasCompleted = true;
 
-          // obtain transport and accommodation prices
-          // in case accommodation price is directly in bookingMessage (legacy)          
+          // obtain transport, accommodation, and payment details
           const transportStep = this.steps.find(s => s.id === 'service-b');
           const accommodationStep = this.steps.find(s => s.id === 'service-c');
 

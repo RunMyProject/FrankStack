@@ -1,34 +1,45 @@
 /**
  * useAuthStore.ts
- * Authentication Store
  * -----------------------
  * Zustand store to manage authentication state.
- * - Tracks current user and authentication status
- * - Provides login and logout actions
- * - Maintains AI context with defaults
- * 
- * Author: Edoardo Sabatini
- * Date: 31 August 2025
+ *
+ * Features:
+ * - Tracks authentication status (isAuthenticated)
+ * - Manages AI context with default values
+ * - Handles login/logout logic
+ * - Supports up to 2 locally saved payment methods (newest-first)
+ *
+ * AUTHOR: Edoardo Sabatini
+ * DATE: 10 October 2025
  */
-
 
 import { create } from 'zustand';
 import type { AIContext } from '../types/chat';
+import type { SavedPaymentMethod } from '../types/saga';
 
 /**
- * Authentication state interface
+ * Authentication store interface
  */
 interface AuthState {
-  user: string | null;                                      // Current logged-in user
-  isAuthenticated: boolean;                                 // Authentication flag
-  aIContext: AIContext;                                     // The AI context
-  login: (username: string, password: string) => void;      // Login action
-  logout: () => void;                                       // Logout action
-  updateAIContext: (context: Partial<AIContext>) => void;   // Update AI context
+  // Auth state
+  isAuthenticated: boolean;                                   // Whether the user is logged in
+  aIContext: AIContext;                                       // Current AI context
+
+  // Auth actions
+  login: (username: string, password: string) => void;        // Login action
+  logout: () => void;                                         // Logout action
+  updateAIContext: (context: Partial<AIContext>) => void;     // Update AI context
+
+  // Payment methods
+  savedPaymentMethods: SavedPaymentMethod[];                  // Stored payment methods (max 2, newest-first)
+  addPaymentMethod: (method: SavedPaymentMethod) => void;     // Add a payment method (keep max 2)
+  removePaymentMethod: (id: string) => void;                  // Remove payment method by id
+  setDefaultPaymentMethod: (id: string) => void;              // Mark a payment method as default
+  printAllPaymentMethods: () => void;                         // Debug print
 }
 
 /**
- * Default AI context values for the model
+ * Default AI context
  */
 const defaultAIContext: AIContext = {
   system: {
@@ -58,17 +69,94 @@ const defaultAIContext: AIContext = {
 };
 
 /**
- * Zustand store for authentication
+ * Zustand store definition (no persistence)
  */
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
+export const useAuthStore = create<AuthState>((set, get) => ({
+  // Initial state
   isAuthenticated: false,
   aIContext: defaultAIContext,
+  savedPaymentMethods: [],
 
+  /**
+   * Add a new payment method
+   * - Newest methods are inserted first (FILO)
+   * - Keep at most 2 methods
+   * - If it's the first or marked as default, unset others
+   */
+  addPaymentMethod: (method) => {
+    set((state) => {
+      const isFirst = state.savedPaymentMethods.length === 0;
+      const now = new Date();
+      const timestamp = `${now.getDate().toString().padStart(2, '0')}/${
+        (now.getMonth() + 1).toString().padStart(2, '0')
+      }/${now.getFullYear()} ${now.getHours().toString().padStart(2, '0')}:${now
+        .getMinutes()
+        .toString()
+        .padStart(2, '0')}`;
+
+      const newMethod: SavedPaymentMethod = {
+        ...method,
+        isDefault: isFirst || !!method.isDefault,
+        timestamp
+      };
+
+      const updatedExisting = newMethod.isDefault
+        ? state.savedPaymentMethods.map((m) => ({ ...m, isDefault: false }))
+        : [...state.savedPaymentMethods];
+
+      const final = [newMethod, ...updatedExisting].slice(0, 2);
+      return { savedPaymentMethods: final };
+    });
+  },
+
+  /**
+   * Remove a payment method by ID
+   */
+  removePaymentMethod: (id) =>
+    set((state) => ({
+      savedPaymentMethods: state.savedPaymentMethods.filter((m) => m.id !== id)
+    })),
+
+  /**
+   * Mark one payment method as default
+   */
+  setDefaultPaymentMethod: (id) =>
+    set((state) => ({
+      savedPaymentMethods: state.savedPaymentMethods.map((m) => ({
+        ...m,
+        isDefault: m.id === id
+      }))
+    })),
+
+  /**
+   * Debug utility to print all payment methods
+   */
+  printAllPaymentMethods: () => {
+    const { savedPaymentMethods } = get();
+    console.log("🧾 **PRINT ALL PAYMENT METHODS**:");
+    if (!savedPaymentMethods.length) {
+      console.log("   --> No saved payment methods.");
+      return;
+    }
+    savedPaymentMethods.forEach((m, i) => {
+      console.log(`--- Method #${i + 1} ---`);
+      console.log(` id: ${m.id}`);
+      console.log(` type: ${m.type}`);
+      console.log(` cardType: ${m.cardType}`);
+      console.log(` lastFourDigits: ${m.lastFourDigits}`);
+      console.log(` token: ${m.token}`);
+      console.log(` isDefault: ${m.isDefault}`);
+      console.log(` savedAt: ${m.timestamp}`);
+    });
+  },
+
+  /**
+   * Login logic (simple demo)
+   * Updates context and sets isAuthenticated = true
+   */
   login: (username, password) => {
     if (username === "Edoardo" && password === "12345") {
       set((state) => ({
-        user: username,
         isAuthenticated: true,
         aIContext: {
           ...state.aIContext,
@@ -76,23 +164,27 @@ export const useAuthStore = create<AuthState>((set) => ({
             ...state.aIContext.system,
             user: "Edoardo",
             userLang: "Italian"
-          },
-          form: {
-            ...state.aIContext.form
           }
         }
       }));
     } else {
-      console.error("Invalid credentials");
+      console.error("❌ Invalid credentials");
+      set({ isAuthenticated: false });
     }
   },
 
-  logout: () => set({
-    user: null,
-    isAuthenticated: false,
-    aIContext: defaultAIContext
-  }),
+  /**
+   * Logout: restore defaults and reset authentication
+   */
+  logout: () =>
+    set({
+      isAuthenticated: false,
+      aIContext: defaultAIContext
+    }),
 
+  /**
+   * Partially update AI context
+   */
   updateAIContext: (partial) =>
     set((state) => ({
       aIContext: {

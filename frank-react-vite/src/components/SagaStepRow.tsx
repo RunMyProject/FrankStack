@@ -3,11 +3,11 @@
  * -----------------------
  * Visualizes a single step of a Saga flow.
  * Shows name, description, status icon, optional error message,
- * and an optional user selection UI (radio + confirm).
+ * and an optional user selection UI (radio + confirm) for transport, hotel, and payment.
  * Bilingual labels (Italian / English) and Tailwind-based styling.
  *
- * Author: Edoardo Sabatini
- * Date: 08 October 2025
+ * AUTHOR: Edoardo Sabatini
+ * DATE: 10 October 2025
  */
 
 import React from 'react';
@@ -15,6 +15,7 @@ import type { TransportOption, HotelOption, HotelBookingEntry, BookingEntry } fr
 import type { SagaStep } from '../types/saga';
 import TransportOptionsCard from './TransportOptionsCard';
 import HotelOptionsCard from './HotelOptionsCard';
+import PaymentOptionsCard from './PaymentOptionsCard';
 
 // Helper function to get transport icon (matches FormBlock.tsx logic)
 const getTransportIcon = (mode?: string): string => {
@@ -60,14 +61,15 @@ type SagaStepRowProps = {
   options?: (TransportOption | HotelOption)[];
   selectedOption: string;
   onSelectOption: (id: string) => void;
-  onConfirmOption: () => void;
+  onConfirmOption: (param?: unknown) => void;
   isConfirming: boolean;
   transportMode?: string;
+  totalAmount?: number;
 };
 
 // Single saga step row component
 const SagaStepRow: React.FC<SagaStepRowProps> = ({ 
-  step, options, selectedOption, onSelectOption, onConfirmOption, isConfirming, transportMode 
+  step, options, selectedOption, onSelectOption, onConfirmOption, isConfirming, transportMode, totalAmount = 0
 }) => {
     
   const getStatusIcon = () => {
@@ -80,6 +82,10 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
         // If this is the completed hotel step with stars
         if (step.id === 'service-c' && step.bookingEntry && 'stars' in step.bookingEntry) {
           return getStarsDisplay((step.bookingEntry as HotelBookingEntry).stars);
+        }
+        // If this is the completed payment step
+        if (step.id === 'service-d') {
+          return '✅';
         }
         return '✅';
       case 'processing': return '⚙️';
@@ -110,6 +116,11 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
 
     // Don't show booking details for service-a (orchestrator step)
     if (step.id === 'service-a') {
+      return null;
+    }
+
+    // Don't show booking details for service-d (payment step)
+    if (step.id === 'service-d') {
       return null;
     }
 
@@ -174,9 +185,9 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
             <p className="text-xs text-red-600 mt-1">⚠️ {step.errorMessage}</p>
           )}
 
-          {step.status === 'user_input_required' && options && (
+          {step.status === 'user_input_required' && (
             <>
-              {step.id === 'service-b' ? (
+              {step.id === 'service-b' && options ? (
                 <TransportOptionsCard
                   options={options as TransportOption[]}
                   selectedId={selectedOption}
@@ -185,7 +196,7 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
                   isConfirming={isConfirming}
                   transportMode={transportMode}
                 />
-              ) : step.id === 'service-c' ? (
+              ) : step.id === 'service-c' && options ? (
                 <HotelOptionsCard
                   options={options as HotelOption[]}
                   selectedId={selectedOption}
@@ -193,10 +204,17 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
                   onConfirm={onConfirmOption}
                   isConfirming={isConfirming}
                 />
+              ) : step.id === 'service-d' ? (
+                <PaymentOptionsCard
+                  totalAmount={totalAmount}
+                  selectedPaymentId={selectedOption}
+                  onSelect={onSelectOption}
+                  onConfirm={onConfirmOption}
+                  isConfirming={isConfirming}
+                />
               ) : null}
             </>
           )}
-
           {renderBookingDetails()}
         </div>
       </div>

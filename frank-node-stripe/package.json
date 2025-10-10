@@ -1,0 +1,18 @@
+{
+  "name": "frank-node-stripe",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simulated Stripe server for FrankStack",
+  "main": "myStripeServer.js",
+  "scripts": {
+    "start": "node myStripeServer.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {}
+}

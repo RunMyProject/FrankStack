@@ -1,5 +1,45 @@
 # FrankStack
 
+*📅 Update 10 October 2025 — Payment Integration (MyStripeServer)*
+
+⚙️ **Summary:**  
+Today’s focus was on setting up the **MyStripeServer** backend and integrating it with the **React frontend payment flow**.  
+This step marks the beginning of the **Payment Services module**, where the user can add, validate, and select payment methods (Visa / Mastercard / AMEX).
+The backend currently runs via a **Node.js/Express test server**, while the **Java + Saga Pattern integration** will be implemented next.
+
+**Frontend Progress:**
+- Implemented `PaymentOptionsCard.tsx` with live card detection and validation.
+- Added `UserEdoardoDB.ts` with predefined payment data (Edoardo + test users).
+- Created test scripts:
+  - `test_token.sh` → verifies token generation from the backend.
+  - `start.sh` → starts the local Node server.
+- Integrated mock payment API for token retrieval (`/getToken`).
+- Used test credit cards from PayPal reference (see below).
+
+🔗 **Testing resource:**  
+👉 [PayPal Test Credit Card Numbers](https://www.paypalobjects.com/en_GB/vhelp/paypalmanager_help/credit_card_numbers.htm)
+
+**Next Step:**
+- Implement backend in **Java (Spring Boot)** with **Saga Pattern** for reliable distributed payment orchestration.
+- Connect to Kafka and add transaction logging.
+- Replace mock tokens with secure JWT-based session handling.
+
+## Screenshots
+
+### 1. Add New Card
+![AddNewCard](screenshots/AddNewCard.png)
+*New card form with validation and dynamic card type detection.*
+
+### 2. Google Payments - Display
+![GooglePayments](screenshots/GooglePayments.png)
+*Shows third-party wallet integration readiness.*
+
+### 3. Payment Services - Waiting
+![PaymentServicesWaiting](screenshots/PaymentServicesWaiting.png)
+*Indicates payment data is being securely processed.*
+
+---
+
 *📅 Update 8 October 2025 — Hotel Options Screen*
 
 ⚠️ **Note:** this is a first working cycle; a few bugs may still be present.
