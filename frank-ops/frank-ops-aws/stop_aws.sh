@@ -1,12 +1,12 @@
 #!/bin/bash
 # -----------------------------------------------------------------------------
-# stopaws.sh
+# stop_aws.sh
 # -----------------------
 # Script to stop and remove the LocalStack container.
 # Checks if LocalStack is running, stops it, and removes the container.
 # -----------------------------------------------------------------------------
 # Author: Edoardo Sabatini
-# Date: 28 August 2025
+# Date: 14 October 2025
 # -----------------------------------------------------------------------------
 
 # Stop LocalStack if running
