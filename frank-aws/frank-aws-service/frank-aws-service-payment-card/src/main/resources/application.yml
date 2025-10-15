@@ -1,0 +1,16 @@
+# application.yml
+# ------------------------------------------------------
+# Configuration file for the Payment Card Wrapper Service (Port 18082)
+#
+# PURPOSE:
+# • Defines server-level properties for this Spring Boot WebFlux service.
+# • Sets the HTTP server port explicitly to 18082 to avoid conflicts.
+#
+# NOTES:
+# • This service listens for POST requests on /cardpayment/send.
+# • Works with the LambdaInvokerService to invoke PaymentCard Lambda
+#   running on LocalStack.
+# • Keep this port consistent with the Docker container / test-wrapper.sh script.
+#
+server:
+  port: 18082

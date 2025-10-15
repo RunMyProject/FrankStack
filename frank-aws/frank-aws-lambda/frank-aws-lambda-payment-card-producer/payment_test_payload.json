@@ -1,0 +1,10 @@
+{
+  "sagaCorrelationId": "corr-id-1760562976",
+  "myStripeToken": "tok_visa_4242_12345",
+  "status": "CREATED",
+  "context": {
+    "travelId": "T-30294",
+    "hotelId": "H-7721",
+    "total": 1250.75
+  }
+}

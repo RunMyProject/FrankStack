@@ -1,0 +1,40 @@
+# application.yml — Frank Payments API Gateway
+server:
+  port: 18081
+
+spring:
+  application:
+    name: frank-api-gateway
+  main:
+    web-application-type: reactive
+
+  cloud:
+    gateway:
+      routes:
+        - id: ping-endpoint
+          uri: http://localhost:18081
+          predicates:
+            - Path=/ping
+
+        - id: hello-test-route
+          uri: http://localhost:18082
+          predicates:
+            - Path=/hello
+            - Method=GET
+
+        - id: cardpayment-producer
+          uri: http://localhost:18082
+          predicates:
+            - Path=/cardpayment/send/**
+            - Method=POST
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"   # utile per debugging (actuator)
