@@ -10,7 +10,7 @@
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
-# Date: 07 October 2025
+# Date: 16 October 2025
 
 # 🖥️ Server configuration
 server:
@@ -101,3 +101,11 @@ spring:
               predicates:
                 - Path=/kafka/bookhotel/**
               # 📨 Internal route for Kafka Producer service, called by orchestrator
+
+            # 💳 Webhook callback for card payment
+            - id: frank-callback-card-payment-complete
+              uri: http://localhost:8080
+              predicates:
+                - Method=POST
+                - Path=/frankcallback/**
+              

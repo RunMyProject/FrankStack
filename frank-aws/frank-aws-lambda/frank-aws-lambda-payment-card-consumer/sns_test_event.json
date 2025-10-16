@@ -1,0 +1,13 @@
+{
+  "Records": [
+    {
+      "EventSource": "aws:sns",
+      "Sns": {
+        "Message": "{  \"sagaCorrelationId\": \"test-corr-id-1760623771\",  \"myStripeToken\": \"tok_visa_4242_12345\",  \"status\": \"CREATED\",  \"context\": {    \"travelId\": \"T-30294\",    \"hotelId\": \"H-7721\",    \"total\": 1250.75  }}",
+        "MessageId": "msg-id-1760623771",
+        "TopicArn": "arn:aws:sns:eu-central-1:000000000000:cardPaymentTopic",
+        "Timestamp": "2025-10-16T14:09:31.000Z"
+      }
+    }
+  ]
+}

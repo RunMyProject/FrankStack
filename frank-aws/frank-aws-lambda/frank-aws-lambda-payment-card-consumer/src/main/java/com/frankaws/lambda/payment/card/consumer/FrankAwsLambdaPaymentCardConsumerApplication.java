@@ -1,31 +1,31 @@
 package com.frankaws.lambda.payment.card.consumer;
 
-/**
- * FrankAwsLambdaPaymentCardConsumerApplication.java
- * -------------------------------------------------
- * Main Spring Boot application class for CardPayment Consumer Lambda.
- * 
- * FEATURES:
- * - Bootstraps the Spring Boot application
- * - Initializes the Lambda microservice for consuming messages from AWS SQS
- * - Supports processing of card payment events via LocalStack SNS/SQS flow
- * 
+//import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+/*
+ * ==========================================================
+ * Spring Boot Entry Point (NOT REQUIRED FOR AWS LAMBDA)
+ * --------------------------------------------------------
+ * This class is the standard entry point for a traditional 
+ * Spring Boot standalone application.
+ * * In this project, the application is deployed as a native
+ * AWS Lambda function, which means:
+ * 1. The AWS Lambda runtime invokes the specific 'handleRequest'
+ * method defined in PaymentCardLambda.java (the Handler).
+ * 2. The entire Spring Boot framework is unnecessary for this 
+ * simple producer logic, saving startup time and memory.
+ * 3. This class and its main method will be ignored by the 
+ * Lambda runtime environment.
+ * ==========================================================
+ *
  * Author: Edoardo Sabatini
- * Date: 15 October 2025
- * 
- * PURPOSE:
- * - Provide a clean entry point for the CardPayment Consumer Lambda
- * - Ensure reactive and minimal setup for testing and monitoring
+ * Date: 16 October 2025
  */
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
+// @SpringBootApplication
 public class FrankAwsLambdaPaymentCardConsumerApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(FrankAwsLambdaPaymentCardConsumerApplication.class, args);
+        // SpringApplication.run(FrankAwsLambdaPaymentCardConsumerApplication.class, args);
     }
 
 }

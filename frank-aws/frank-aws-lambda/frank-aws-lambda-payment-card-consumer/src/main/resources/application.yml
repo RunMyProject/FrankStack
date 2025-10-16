@@ -42,6 +42,13 @@ sqs:
   queue:
     cardpayment: cardpayment-queue  # SQS queue name for CardPayment
 
+# Webhook callback configuration
+callback:
+  orchestrator-url: ${ORCHESTRATOR_WEBHOOK_URL}
+  # 👇 Using environment variable instead of hardcoded URL
+  #     as per 12-Factor App best practice:
+  #     Configuration should be separated from code and injected at runtime.
+
 # Logging configuration
 logging:
   level:
