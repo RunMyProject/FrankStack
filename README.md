@@ -3,29 +3,22 @@
 *📅 Update 17 October 2025 — Payment Saga Closed*
 
 ⚙️ **Summary:**  
-Today marks the official closure of the **Payment Saga** in FrankStack.  
+Today marks the official closure of the **Payment Saga** in FrankStack.
 
----
+### Payment Saga Closed
 
-**Flow:**  
+![SagaClosedPayment](screenshots/Saga_closed_payment_screen_2025_10_17.png)
+
+*Final screen showing that the payment saga has been successfully completed.*
+
+**Flow:**
 Once the user completes the booking and selects the card with the token from the **myStripe** server, React invokes the **orchestrator**, which calls the **payment service**. Inside, a **bridge** is triggered on an **AWS subnet** — Amazon Web Services. In this demo-prototype, we used **LocalStack** installed on an Ubuntu machine.  
 
 The call first passes through an **API-AWS-Gateway** dedicated to **payment processes**. Afterwards, a **wrapper** invokes an AWS Lambda registered for the **SNS topic**. Then, an **SQS queue** carries the payment message containing the **myStripe token** and the **Saga correlationID**.  
 
 The consumer Lambda, after the producer phase, accepts (or triggers) the message, registers the transaction in the database (to be implemented), and returns a link to the invoice stored in the **S3 bucket** (to be implemented).  
 
-At this point, the Lambda triggers a **webhook** to the orchestrator, which forwards the response as a **source event** to React, notifying that the payment has been successfully completed (current screen below). An additional callback notifies the orchestrator of the invoice reception, closing the saga, freeing Hazelcast in-memory storage, and cleaning the SSE emission.
-
----
-
-## Screenshot
-
-### Payment Saga Closed
-
-![SagaClosedPayment](screenshots/Saga_closed_payment_screen_2025_10_17.png)
-*Final screen showing that the payment saga has been successfully completed.*
-
----
+At this point, the Lambda triggers a **webhook** to the orchestrator, which forwards the response as a **source event** to React, notifying that the payment has been successfully completed (current screen). An additional callback notifies the orchestrator of the invoice reception, closing the saga, freeing Hazelcast in-memory storage, and cleaning the SSE emission.
 
 ## Payment Flow
 
