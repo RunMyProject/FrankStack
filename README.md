@@ -5,6 +5,8 @@
 ⚙️ **Summary:**  
 Today marks the official closure of the **Payment Saga** in FrankStack.  
 
+---
+
 **Flow:**  
 Once the user completes the booking and selects the card with the token from the **myStripe** server, React invokes the **orchestrator**, which calls the **payment service**. Inside, a **bridge** is triggered on an **AWS subnet** — Amazon Web Services. In this demo-prototype, we used **LocalStack** installed on an Ubuntu machine.  
 
@@ -13,6 +15,17 @@ The call first passes through an **API-AWS-Gateway** dedicated to **payment proc
 The consumer Lambda, after the producer phase, accepts (or triggers) the message, registers the transaction in the database (to be implemented), and returns a link to the invoice stored in the **S3 bucket** (to be implemented).  
 
 At this point, the Lambda triggers a **webhook** to the orchestrator, which forwards the response as a **source event** to React, notifying that the payment has been successfully completed (current screen below). An additional callback notifies the orchestrator of the invoice reception, closing the saga, freeing Hazelcast in-memory storage, and cleaning the SSE emission.
+
+---
+
+## Screenshot
+
+### Payment Saga Closed
+
+![SagaClosedPayment](screenshots/Saga_closed_payment_screen_2025_10_17.png)
+*Final screen showing that the payment saga has been successfully completed.*
+
+---
 
 ## Payment Flow
 
@@ -30,13 +43,6 @@ At this point, the Lambda triggers a **webhook** to the orchestrator, which forw
 12. Orchestrator forwards source event to React
 13. React notifies: payment completed ✅
 14. Callback: invoice received → Saga closed, Hazelcast cleared, SSE cleaned
-
-## Screenshot
-
-### Payment Saga Closed
-
-![SagaClosedPayment](screenshots/Saga_closed_payment_screen_2025_10_17.png)
-*Final screen showing that the payment saga has been successfully completed.*
 
 ---
 
