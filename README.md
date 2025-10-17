@@ -5,21 +5,6 @@
 ⚙️ **Summary:**  
 Today marks the official closure of the **Payment Saga** in FrankStack.  
 
-flowchart TD
-    A[User completes booking & selects card with myStripe token] --> B[React invokes Orchestrator]
-    B --> C[Payment Service]
-    C --> D[Bridge on AWS Subnet (LocalStack demo)]
-    D --> E[**API-AWS-Gateway** for payment processes]
-    E --> F[Wrapper invokes AWS Lambda (SNS topic)]
-    F --> G[SQS queue: message with myStripe token + Saga correlationID]
-    G --> H[Consumer Lambda accepts/triggers message]
-    H --> I[Register transaction in DB (to be implemented)]
-    I --> J[Return invoice link from S3 bucket (to be implemented)]
-    J --> K[Lambda triggers webhook to Orchestrator]
-    K --> L[Orchestrator forwards source event to React]
-    L --> M[React notifies: payment completed ✅]
-    M --> N[Callback: invoice received → Saga closed, Hazelcast cleared, SSE cleaned]
-
 **Flow:**  
 Once the user completes the booking and selects the card with the token from the **myStripe** server, React invokes the **orchestrator**, which calls the **payment service**. Inside, a **bridge** is triggered on an **AWS subnet** — Amazon Web Services. In this demo-prototype, we used **LocalStack** installed on an Ubuntu machine.  
 
@@ -29,11 +14,28 @@ The consumer Lambda, after the producer phase, accepts (or triggers) the message
 
 At this point, the Lambda triggers a **webhook** to the orchestrator, which forwards the response as a **source event** to React, notifying that the payment has been successfully completed (current screen below). An additional callback notifies the orchestrator of the invoice reception, closing the saga, freeing Hazelcast in-memory storage, and cleaning the SSE emission.
 
+## Payment Flow
+
+1. User completes booking & selects card with myStripe token
+2. React invokes Orchestrator
+3. Payment Service
+4. Bridge on AWS Subnet (LocalStack demo)
+5. API-AWS-Gateway for payment processes
+6. Wrapper invokes AWS Lambda (SNS topic)
+7. SQS queue: message with myStripe token + Saga correlationID
+8. Consumer Lambda accepts/triggers message
+9. Register transaction in DB (to be implemented)
+10. Return invoice link from S3 bucket (to be implemented)
+11. Lambda triggers webhook to Orchestrator
+12. Orchestrator forwards source event to React
+13. React notifies: payment completed ✅
+14. Callback: invoice received → Saga closed, Hazelcast cleared, SSE cleaned
+
 ## Screenshot
 
-### 1. Payment Saga Closed
+### Payment Saga Closed
 
-![SagaClosedPayment](Saga_closed_payment_screen_2025_10_17.png)
+![SagaClosedPayment](screenshots/Saga_closed_payment_screen_2025_10_17.png)
 *Final screen showing that the payment saga has been successfully completed.*
 
 ---
