@@ -7,11 +7,12 @@
  * and manages the booking process state including payment processing.
  * 
  * AUTHOR: Edoardo Sabatini
- * DATE: 10 October 2025
+ * DATE: 17 October 2025
  */
 
 import type { AIContext, ProcessResult } from '../types/chat';
 import type { TransportOption, SagaStep, BookingEntry, HotelOption } from '../types/saga';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface BookingManagerCallbacks {
   onStepUpdate: (steps: SagaStep[]) => void;
@@ -226,51 +227,106 @@ export class BookingManager {
       throw error;
     }
   }
+  
+  /**
+   * sendPaymentDetails
+   * -----------------------
+   * Determines payment type and sends payment details.
+   * For credit cards, delegates to sendPaymentWithDefaultCard.
+   */
+  async sendPaymentDetails(paymentId: string, paymentType: string): Promise<void> {
+    if (paymentType === 'credit_card') {
+      // Await the function to ensure the payment is processed before continuing
+      await this.sendPaymentWithDefaultCard(paymentId);
+    } else {
+      console.log('TODO: handle other payment types in the future');
+    }
+  }
 
-  // Send payment details to backend
-  async sendPaymentDetails(paymentMethodId: string, paymentType: string): Promise<void> {
-    if (!paymentMethodId || !this.sagaId) {
-      throw new Error('Missing payment details or saga ID');
+  /**
+   * sendPaymentWithDefaultCard
+   * -----------------------
+   * Retrieves the default payment card token from Zustand store
+   * and sends it to the backend AWS bridge for payment processing.
+   *
+   * Parameters:
+   *   - paymentId: string → the payment identifier associated with the request
+   */
+  async sendPaymentWithDefaultCard(paymentId: string): Promise<void> {
+    // ===============================
+    // Step 1: Retrieve saved payment methods from AuthStore
+    // ===============================
+    const { savedPaymentMethods } = useAuthStore.getState();
+
+    if (!savedPaymentMethods.length) {
+      throw new Error('No payment methods saved in AuthStore');
     }
 
-    // Update UI to show processing state
-    this.steps = this.steps.map(step => {
-      if (step.id === 'service-d') {
-        return {
-          ...step,
-          status: 'processing',
-          description: 'Processing payment...'
-        };
-      }
-      return step;
-    });
+    // ===============================
+    // Step 2: Determine which card to use
+    // If paymentId matches a card, use it; otherwise use default or the first one
+    // ===============================
+    const selectedCard =
+      savedPaymentMethods.find(m => m.id === paymentId) ||
+      savedPaymentMethods.find(m => m.isDefault) ||
+      savedPaymentMethods[0];
 
+    if (!selectedCard) {
+      throw new Error('No valid card found for payment');
+    }
+
+    // ===============================
+    // Step 3: Extract the Stripe token and card ID
+    // ===============================
+    const myStripeToken = selectedCard.token;
+    const paymentMethodId = selectedCard.id;
+
+    if (!myStripeToken || !paymentMethodId || !this.sagaId) {
+      throw new Error('Missing Stripe token, payment method ID, or saga ID');
+    }
+
+    console.log('💳 Using Stripe token:', myStripeToken);
+
+    // ===============================
+    // Step 4: Prepare payload for backend AWS bridge
+    // ===============================
+    const payload = {
+      sagaCorrelationId: this.sagaId,
+      paymentMethodId,
+      paymentId,
+      myStripeToken // renamed token field
+    };
+
+    console.log('📤 [POST] Payment Details: Sending JSON to AWS bridge:', payload);
+
+    // ===============================
+    // Step 5: Update UI to show processing state
+    // ===============================
+    this.steps = this.steps.map(step =>
+      step.id === 'service-d'
+        ? { ...step, status: 'processing', description: 'Processing payment...' }
+        : step
+    );
     this.callbacks.onStepUpdate([...this.steps]);
 
+    // ===============================
+    // Step 6: Send POST request to backend (AWS bridge)
+    // ===============================
     try {
-      const json = {
-        sagaCorrelationId: this.sagaId,
-        paymentMethodId,
-        paymentType
-      };
-
-      console.log('📤 [POST] Payment Details: Sending JSON:', json);
-
       const response = await fetch(`${this.urlProxy}/paymentsprocess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(json)
+        body: JSON.stringify(payload)
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      console.log('✅ [POST] Payment submitted, awaiting confirmation...');
-
+      console.log('✅ Payment submitted successfully, awaiting confirmation...');
     } catch (error) {
-      console.error('❌ [POST] Error processing payment:', error);
+      console.error('❌ Error sending payment to AWS bridge:', error);
       this.callbacks.onError(error instanceof Error ? error.message : 'Error processing payment');
       throw error;
     }
@@ -285,7 +341,11 @@ export class BookingManager {
     this.isSSEConnected = true;
 
     this.eventSource.onmessage = (event) => {
+      
       try {
+
+        if(this.isCompleted()) return; // we ignore everything after the intentional closure
+
         const data = JSON.parse(event.data);
         const { message, status, bookingMessage } = data;
 
@@ -475,8 +535,26 @@ export class BookingManager {
 
         // PAYMENT_CONFIRMED - payment processed successfully
         if (status === 'PAYMENT_CONFIRMED') {
+
           console.log('✅ [SSE] Payment confirmed by backend');
-          console.log('📦 [SSE] Payment confirmation:', bookingMessage);
+
+          const emitPayload = data;
+
+          console.log('📦 [SSE] Payment confirmation:', emitPayload);
+
+          const {
+              invoiceUrl,
+              emissionClosed,
+              message,
+              sagaCorrelationId,
+              timestamp
+          } = { ...emitPayload };
+
+          console.log('invoiceUrl:', invoiceUrl);
+          console.log('emissionClosed:', emissionClosed);
+          console.log('message:', message);
+          console.log('sagaCorrelationId:', sagaCorrelationId);
+          console.log('timestamp:', timestamp);
 
           // Update payment step to completed
           this.steps = this.steps.map(step => {
@@ -492,8 +570,11 @@ export class BookingManager {
 
           this.callbacks.onStepUpdate([...this.steps]);
 
-          // Stream stays open - waiting for final confirmation
-          console.log('⏳ [SSE] Waiting for final confirmation...');
+          // Stream stays open - waiting for final confirmation or TTL
+          // if an error occurs it times out!
+          //
+          console.log('🐌 [SSE] Closing SAGA... 🐌');          
+          this.closeSaga(sagaCorrelationId); // close the SAGA flow permanently
           return;
         }
 
@@ -511,8 +592,7 @@ export class BookingManager {
 
           if (hasTransportResults) {
             console.log('⏭️ [SSE] IGNORING - This is the old results, not final confirmation');
-            console.log('⏭️ [SSE] Waiting for real final confirmation...');
-            // DO NOT close stream, DO NOT process this message
+            console.log('⏭️ [SSE] Waiting for real final confirmation...');  
             return;
           }
 
@@ -532,8 +612,6 @@ export class BookingManager {
                 : step
             );
           }
-
-          this.hasCompleted = true;
 
           // obtain transport, accommodation, and payment details
           const transportStep = this.steps.find(s => s.id === 'service-b');
@@ -568,12 +646,13 @@ export class BookingManager {
       }
     };
 
-    this.eventSource.onerror = (error) => {
-      console.error('❌ [SSE] Connection error:', error);
-      if (this.eventSource?.readyState === EventSource.CLOSED && this.hasCompleted) {
-        console.log('✅ [SSE] Stream closed normally');
+    this.eventSource.onerror = (error) => {      
+      if (this.isCompleted()) {        
+        console.log('✅ [SSE] Stream closed normally');        
+        this.cleanup();
         return;
       }
+      console.error('❌ [SSE] Connection error:', error);
       this.cleanup();
       this.callbacks.onError('Server connection interrupted');
     };
@@ -597,4 +676,25 @@ export class BookingManager {
     this.transportOptions = [];
     this.hotelOptions = [];
   }
+
+  // Call the backend to close the saga once React has received the invoice
+  //
+  closeSaga(sagaCorrelationId: string): void {
+    try {
+
+      console.log(`🔒 [closeSaga] Calling backend to close saga: ${sagaCorrelationId}`);
+
+      fetch(`http://localhost:8081/frankcallback/closeSaga?sagaCorrelationId=${sagaCorrelationId}`, {
+        method: 'POST'
+      });
+
+      console.log(`🔒 [closeSaga] Called backend to close saga: ${sagaCorrelationId}`);
+
+      this.hasCompleted = true;
+
+    } catch (error) {
+      console.error('❌ [closeSaga] Error calling backend:', error);
+    }
+  }
+
 }

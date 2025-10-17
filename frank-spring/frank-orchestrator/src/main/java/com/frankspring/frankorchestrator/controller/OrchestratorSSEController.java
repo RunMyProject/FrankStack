@@ -17,7 +17,7 @@ package com.frankspring.frankorchestrator.controller;
  * - Kafka response handling via FrankKafkaListener
  * 
  * Author: Edoardo Sabatini
- * Date: 08 October 2025
+ * Date: 17 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -308,7 +308,7 @@ public class OrchestratorSSEController {
 
             // 6️⃣ Notify SSE client
             sseEmitterManager.emit(sagaCorrelationId, Map.of(
-                    "message", "Hotel confirmed. Payment step will start soon.",
+                    "message", "Hotel confirmed.",
                     "status", "processing",
                     "sagaCorrelationId", sagaCorrelationId,
                     "timestamp", Instant.now().toString()
@@ -330,6 +330,96 @@ public class OrchestratorSSEController {
                     "error", e.getMessage()
             ));
         }
+    }
+
+    /**
+     * sendPaymentCard
+     * -----------------------
+     * Temporary endpoint for testing PaymentCardMessage POST requests.
+     * 
+     * Functionality:
+     * 1️⃣ Logs the incoming payment JSON to console for inspection.
+     * 2️⃣ Constructs a payload to simulate sending the payment to the AWS Lambda bridge.
+     * 3️⃣ Performs an internal POST call to the AWS Lambda bridge endpoint (localhost:18081).
+     * 4️⃣ Handles and logs any exceptions during the internal call.
+     * 5️⃣ Returns an immediate OK response to the frontend with the received JSON.
+     *
+     * Note:
+     * - This endpoint is primarily for local testing and integration of payment flow.
+     */
+    @PostMapping("/paymentsprocess")
+    public ResponseEntity<Map<String, Object>> sendPaymentCard(@RequestBody Map<String, Object> paymentJson) {
+
+        // 📤 Log the received payment JSON to console
+        System.out.println("📤 [POST] Payment Details received:");
+        paymentJson.forEach((key, value) -> System.out.println(key + ": " + value));
+
+        // 🌐 Call the internal AWS Lambda bridge
+        String awsServiceUrl = "http://localhost:18081/cardpayment/send";
+        Map<String, Object> awsPayload = null;
+        
+        try {
+
+                // 🔧 Build the payload for the AWS Lambda bridge (port 18081)
+                Map<String, Object> context = Map.of(
+                    "travelId", paymentJson.getOrDefault("travelId", "UNKNOWN"),
+                    "hotelId", paymentJson.getOrDefault("hotelId", "NONE"),
+                    "total", paymentJson.getOrDefault("amount", 0.0)
+                );
+                
+                awsPayload = Map.of(
+                     "sagaCorrelationId", paymentJson.getOrDefault("sagaCorrelationId", "NO_SAGA_ID"),
+                     "myStripeToken", paymentJson.getOrDefault("myStripeToken", "unknown_token"),
+                     "status", "CREATED",
+                     "context", context
+                );
+
+                String sagaCorrelationId = (String) awsPayload.get("sagaCorrelationId");
+
+                // 1️⃣ Notify SSE client
+                sseEmitterManager.emit(sagaCorrelationId, Map.of(
+                        "message", "Payment process started",
+                        "status", "processing",
+                        "sagaCorrelationId", sagaCorrelationId,
+                        "timestamp", Instant.now().toString()
+                ));
+
+                String response = restTemplate.postForObject(awsServiceUrl, awsPayload, String.class);
+
+                // ✅ Log the response from AWS bridge
+                System.out.println("✅ [PAYMENT-BRIDGE] Response from AWS Lambda bridge: " + response);
+
+                // 2️⃣ Notify SSE client
+                sseEmitterManager.emit(sagaCorrelationId, Map.of(
+                        "message", "AWS Lambda bridge Payment process invoked: " + response,
+                        "status", "processing",
+                        "sagaCorrelationId", sagaCorrelationId,
+                        "timestamp", Instant.now().toString()
+                ));
+
+        } catch (Exception e) {
+            // 💥 Log any error during the internal call
+            System.err.println("💥 --------------------------------------------------------------------");
+            System.err.println("💥 [PAYMENT-BRIDGE] Error calling AWS Lambda bridge:");
+            System.err.println("💥 [PAYMENT-BRIDGE] URL:" + awsServiceUrl);
+            System.err.println("💥 [PAYMENT-BRIDGE] awsPayload:" + awsPayload);
+            if(e!=null) {
+                e.printStackTrace();
+                System.err.println("💥 [PAYMENT-BRIDGE] Error calling AWS Lambda bridge: " + e.getMessage());
+                System.err.println("💥 --------------------------------------------------------------------");
+            } else {
+                    System.err.println("💥 --------------------------------------------------------------------");
+                    System.err.println("💥 [PAYMENT-BRIDGE] This Error is null AFTER calling AWS Lambda bridge!");
+                    System.err.println("💥 --------------------------------------------------------------------");
+            }
+        }
+
+        // 🔄 Return OK to frontend immediately, while internal process is triggered
+        return ResponseEntity.ok(Map.of(
+            "status", "ok",
+            "message", "Payment JSON received, logged, and internally sent to AWS bridge!",
+            "receivedData", paymentJson
+        ));
     }
 
 }

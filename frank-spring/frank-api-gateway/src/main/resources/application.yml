@@ -10,7 +10,7 @@
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
-# Date: 16 October 2025
+# Date: 17 October 2025
 
 # 🖥️ Server configuration
 server:
@@ -108,4 +108,20 @@ spring:
               predicates:
                 - Method=POST
                 - Path=/frankcallback/**
+              # 📨 Routes POST /frankcallback to Webhook callback service
               
+            # 💳 Payment card processing endpoint via Orchestrator
+            - id: frank-orchestrator-paymentsprocess
+              uri: http://localhost:8080
+              predicates:
+                - Method=POST
+                - Path=/frankorchestrator/paymentsprocess
+              # 📨 Routes POST /frankorchestrator/paymentsprocess to orchestrator service
+
+            # 🔒 Webhook callback to close saga once React has received the invoice
+            - id: frank-callback-close-saga
+              uri: http://localhost:8080
+              predicates:
+                - Method=POST
+                - Path=/frankcallback/closeSaga/**
+              # 📨 Routes POST /frankcallback/closeSaga to webhook service that closes the saga

@@ -12,7 +12,7 @@ package com.frankspring.frankorchestrator;
  * - To test React calls directly without API Gateway, uncomment the CORS bean below
  *
  * Author: Edoardo Sabatini
- * Date: 16 October 2025
+ * Date: 17 October 2025
  */
 
 import org.springframework.boot.SpringApplication;
@@ -21,7 +21,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-@SpringBootApplication(scanBasePackages = "com.frankstack.frankorchestrator")
+// @SpringBootApplication(scanBasePackages = "com.frankstack.frankorchestrator")
+@SpringBootApplication
 public class FrankOrchestratorApplication {
 
     public static void main(String[] args) {
