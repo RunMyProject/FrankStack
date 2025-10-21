@@ -7,7 +7,7 @@ Docker Compose added for the **first part** of the stack. Usage:
 
 ```bash
 cd FrankStack/frank-spring
-docker compose up --build
+docker-compose up -d --build
 ```
 
 AWS and Node shells remain for now; Kafka shells can be removed.
