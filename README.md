@@ -1,5 +1,19 @@
 # FrankStack
 
+*📅 Update 21 October 2025 — Docker Compose & Shell Adjustments*
+
+⚙️ **Summary:**
+Docker Compose added for the **first part** of the stack. Usage:
+
+```bash
+cd FrankStack/frank-spring
+docker compose up --build
+```
+
+AWS and Node shells remain for now; Kafka shells can be removed.
+
+---
+
 *📅 Update 17 October 2025 — Payment Saga Closed*
 
 ⚙️ **Summary:**  
