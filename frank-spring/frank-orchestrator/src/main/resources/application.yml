@@ -18,14 +18,22 @@
 #     • External service endpoints
 #
 # Author: Edoardo Sabatini
-# Date: 03 October 2025
+# Date: 21 October 2025
 
 spring:
   application:
-    name: frank-kafka-travel-consumer
-
+    name: frank-orchestrator
+  redis:
+    key-prefix: "saga:"
+    host: frankstack-redis        
+    port: 6379
+    lettuce:
+      pool:
+        max-active: 10
+        max-idle: 5
+        min-idle: 1
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: frankstack-kafka:9092
     consumer:
       group-id: frank-kafka-group
       auto-offset-reset: earliest
@@ -37,6 +45,11 @@ spring:
 
 server:
   port: 8080
+
 external:
-# kafka-producer-port: 8082  # use 8082 to connect directly to Kafka Producer
-  kafka-producer-port: 8081  # use 8081 to connect via API Gateway
+  frankstack-kafka-producer-port-travel: 8082  # use 8081 to connect via API Gateway
+  frankstack-kafka-producer-port-hotel: 8086  # use 8081 to connect via API Gateway
+  # 🌐 Kafka Travel Producer service Docker address
+  frankstack-kafka-travel-producer-host: frankstack-kafka-travel-producer
+  # 🌐 Kafka Hotel Producer service Docker address
+  frankstack-kafka-hotel-producer-host: frankstack-kafka-hotel-producer

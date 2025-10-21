@@ -18,14 +18,14 @@
 #     • External service endpoints
 #
 # Author: Edoardo Sabatini
-# Date: 02 October 2025
+# Date: 21 October 2025
 
 spring:
   application:
     name: frank-kafka-hotel-producer
 
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: frankstack-kafka:9092
     consumer:
       group-id: frank-kafka-group
       auto-offset-reset: earliest

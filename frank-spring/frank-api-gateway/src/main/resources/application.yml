@@ -10,7 +10,7 @@
 # - Autoconfigure.exclude removed as keys are now correct
 #
 # Author: Edoardo Sabatini
-# Date: 17 October 2025
+# Date: 21 October 2025
 
 # 🖥️ Server configuration
 server:
@@ -30,14 +30,14 @@ spring:
 
             # 👋 Hello Endpoint
             - id: hello-endpoint
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Path=/hello
               # ✅ Maps /hello requests to backend service
 
             # ⚠️ Old orchestrator route commented out
             # - id: orchestrator-service
-            #   uri: http://localhost:8080
+            #   uri: http://frankstack-orchestrator:8080
             #   predicates:
             #     - Path=/orchestrator/**
             #   filters:
@@ -45,7 +45,7 @@ spring:
 
             # ⚠️ Old SSE route commented out
             # - id: hello-sse-service
-            #   uri: http://localhost:8080
+            #   uri: http://frankstack-orchestrator:8080
             #   predicates:
             #     - Path=/sse/**
             #   filters:
@@ -53,21 +53,21 @@ spring:
 
             # ✅ NEW ACTIVE ROUTE for orchestrator
             - id: frank-orchestrator
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Path=/frankorchestrator/**
               # 🌊 Handles saga creation and SSE streaming
 
             # ✅ Kafka Producer route (internal)
             - id: kafka-producer-send
-              uri: http://localhost:8082
+              uri: http://frankstack-kafka-travel-producer:8082
               predicates:
                 - Path=/kafka/send/**
               # 📨 Internal route for Kafka Producer service, not called directly by frontend
             
             # 🧭 sendbooktravel
             - id: frank-orchestrator-sendbooktravel
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Method=POST
                 - Path=/frankorchestrator/sendbooktravel
@@ -75,21 +75,21 @@ spring:
 
             # ✅ Kafka Producer route for booktravel (internal)
             - id: kafka-producer-booktravel
-              uri: http://localhost:8082
+              uri: http://frankstack-kafka-travel-producer:8082
               predicates:
                 - Path=/kafka/booktravel/**
               # 📨 Internal route for Kafka Producer service, called by orchestrator
 
             # ✅ Kafka Producer route (internal)
             - id: kafka-producer-sendhotel
-              uri: http://localhost:8086
+              uri: http://frankstack-kafka-hotel-producer:8086
               predicates:
                 - Path=/kafka/sendhotel/**
               # 📨 Internal route for Kafka Producer service, not called directly by frontend
 
             # 🧭 sendbookhotel
             - id: frank-orchestrator-sendbookhotel
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Method=POST
                 - Path=/frankorchestrator/sendbookhotel
@@ -97,14 +97,14 @@ spring:
 
             # ✅ Kafka Producer route for bookhotel (internal)
             - id: kafka-producer-bookhotel
-              uri: http://localhost:8086
+              uri: http://frankstack-kafka-hotel-producer:8086
               predicates:
                 - Path=/kafka/bookhotel/**
               # 📨 Internal route for Kafka Producer service, called by orchestrator
 
             # 💳 Webhook callback for card payment
             - id: frank-callback-card-payment-complete
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Method=POST
                 - Path=/frankcallback/**
@@ -112,7 +112,7 @@ spring:
               
             # 💳 Payment card processing endpoint via Orchestrator
             - id: frank-orchestrator-paymentsprocess
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Method=POST
                 - Path=/frankorchestrator/paymentsprocess
@@ -120,7 +120,7 @@ spring:
 
             # 🔒 Webhook callback to close saga once React has received the invoice
             - id: frank-callback-close-saga
-              uri: http://localhost:8080
+              uri: http://frankstack-orchestrator:8080
               predicates:
                 - Method=POST
                 - Path=/frankcallback/closeSaga/**

@@ -1,0 +1,159 @@
+# ================================================================
+# docker-compose.yml
+# FrankStack - API Gateway + Kafka + Orchestrator
+# Optimized: avoid downloading Maven dependencies every build
+# Author: Edoardo Sabatini
+# Date: 21 October 2025
+# ================================================================
+
+version: '3.9'
+
+services:
+  # ----------------------------
+  # FrankStack API Gateway (BFF)
+  # ----------------------------
+  frankstack-api-gateway:
+    build:
+      context: ./frank-api-gateway
+      dockerfile: Dockerfile
+    container_name: frankstack-api-gateway
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - maven-repo:/root/.m2   # persist Maven dependencies
+    networks:
+      - frankstack-net
+
+  # ----------------------------
+  # FrankStack Kafka (Redpanda)
+  # ----------------------------
+  frankstack-kafka:
+    image: redpandadata/redpanda:latest
+    container_name: frankstack-kafka
+    ports:
+      - "9092:9092"
+    command:
+      - redpanda start
+      - --overprovisioned
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://frankstack-kafka:9092
+    networks:
+      - frankstack-net
+
+  # -------------------------
+  # FrankStack Orchestrator
+  # -------------------------
+  frankstack-orchestrator:
+    build:
+      context: ./frank-orchestrator
+      dockerfile: Dockerfile
+    container_name: frankstack-orchestrator
+    depends_on:
+      - frankstack-redis
+      - frankstack-kafka
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - maven-repo:/root/.m2   # persist Maven dependencies
+    networks:
+      - frankstack-net
+
+# ------------------------------------------------------------------------------------
+# Kafka microservices
+# ------------------------------------------------------------------------------------
+
+# ---------------------------------
+# Producers
+# ---------------------------------
+
+  frankstack-kafka-travel-producer:
+    build:
+      context: ./frank-kafka/frank-kafka-travel-producer
+      dockerfile: Dockerfile
+    container_name: frankstack-kafka-travel-producer
+    depends_on:
+      - frankstack-kafka
+      - frankstack-orchestrator
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - maven-repo:/root/.m2
+    networks:
+      - frankstack-net
+
+  frankstack-kafka-hotel-producer:
+    build:
+      context: ./frank-kafka/frank-kafka-hotel-producer
+      dockerfile: Dockerfile
+    container_name: frankstack-kafka-hotel-producer
+    depends_on:
+      - frankstack-kafka
+      - frankstack-orchestrator
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - maven-repo:/root/.m2
+    networks:
+      - frankstack-net
+
+# ---------------------------------
+# Consumers
+# ---------------------------------
+
+  frankstack-kafka-travel-consumer:
+    build:
+      context: ./frank-kafka/frank-kafka-travel-consumer
+      dockerfile: Dockerfile
+    container_name: frankstack-kafka-travel-consumer
+    depends_on:
+      - frankstack-kafka
+      - frankstack-orchestrator
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - maven-repo:/root/.m2
+    networks:
+      - frankstack-net
+
+  frankstack-kafka-hotel-consumer:
+    build:
+      context: ./frank-kafka/frank-kafka-hotel-consumer
+      dockerfile: Dockerfile
+    container_name: frankstack-kafka-hotel-consumer
+    depends_on:
+      - frankstack-kafka
+      - frankstack-orchestrator
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    volumes:
+      - maven-repo:/root/.m2
+    networks:
+      - frankstack-net
+
+# end KAFKA ---------------------------------------------------------------------------
+
+  frankstack-redis:
+    image: redis:7.0-alpine
+    container_name: frankstack-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - frankstack-net
+
+# ------------------------------------------------------------------------------------
+# Networks and volumes
+# ------------------------------------------------------------------------------------
+networks:
+  frankstack-net:
+    driver: bridge
+
+volumes:
+  maven-repo: {}

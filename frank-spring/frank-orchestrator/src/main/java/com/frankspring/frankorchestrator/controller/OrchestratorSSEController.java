@@ -17,7 +17,7 @@ package com.frankspring.frankorchestrator.controller;
  * - Kafka response handling via FrankKafkaListener
  * 
  * Author: Edoardo Sabatini
- * Date: 17 October 2025
+ * Date: 21 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -143,9 +143,8 @@ public class OrchestratorSSEController {
             bookingMessage.setStatus(SagaStatus.SAGA_IN_PROGRESS);
             sagaStorage.updateSaga(bookingMessage);
 
-            String externalServiceUrl = "http://localhost:" 
-                                        + appPropertiesComponent.getKafkaProducerPort() 
-                                        + "/kafka/send";
+            // 5️⃣ Send to Kafka for travel search
+            String externalServiceUrl = appPropertiesComponent.getKafkaTravelProducerUrl() + "/send";
 
             restTemplate.postForObject(externalServiceUrl, bookingMessage, String.class);
             System.out.println("✅ [ORCHESTRATOR] BookingMessage sent to producer successfully");
@@ -218,9 +217,7 @@ public class OrchestratorSSEController {
             System.out.println("✈️ [sendbooktravel] Transport mode: " + travelMode + " | Selected ID: " + selectedTravelId);
 
             // 5️⃣ Send to Kafka for hotel search
-            String externalServiceUrl = "http://localhost:" 
-                                        + appPropertiesComponent.getKafkaProducerPort() 
-                                        + "/kafka/booktravel";
+            String externalServiceUrl = appPropertiesComponent.getKafkaTravelProducerUrl() + "/booktravel";
 
             restTemplate.postForObject(externalServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [sendbooktravel] BookingMessage sent to Kafka (hotel search)");
@@ -300,9 +297,8 @@ public class OrchestratorSSEController {
             System.out.println("🏨 [sendbookhotel] Selected Hotel ID: " + selectedHotelId);
 
             // 4️⃣ Send to Kafka for hotel confirmation
-            String hotelServiceUrl = "http://localhost:" 
-                                    + appPropertiesComponent.getKafkaProducerPort() 
-                                    + "/kafka/bookhotel";
+            String hotelServiceUrl = appPropertiesComponent.getKafkaHotelProducerUrl() + "/bookhotel";
+
             restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [sendbookhotel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
 

@@ -1,33 +1,45 @@
-/**
- * AppPropertiesComponent.java
- * -----------------------
- * Component to store application-level properties
- * 
- * NOTES:
- * - Holds configuration values injected from application.yml or environment
- * - Currently provides the port of the external Kafka Producer service
- *
- * Author: Edoardo Sabatini
- * Date: 05 October 2025
- */
-
 package com.frankspring.frankorchestrator.component;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+/**
+ * AppPropertiesComponent.java
+ * -----------------------
+ * Centralized component to store application-level configuration values.
+ *
+ * Author: Edoardo Sabatini
+ * Date: 21 October 2025
+ */
+
 @Component
 public class AppPropertiesComponent {
 
-    // 🌐 Port where the external Kafka Producer service is running
-    @Value("${external.kafka-producer-port}")
-    private int kafkaProducerPort;
+    // 🌐 Travel Producer hostname + port
+    @Value("${external.frankstack-kafka-travel-producer-host}")
+    private String kafkaTravelProducerHost;
+    @Value("${external.frankstack-kafka-producer-port-travel}")
+    private int kafkaTravelProducerPort;
+
+    // 🌐 Hotel Producer hostname + port
+    @Value("${external.frankstack-kafka-hotel-producer-host}")
+    private String kafkaHotelProducerHost;
+    @Value("${external.frankstack-kafka-producer-port-hotel}")
+    private int kafkaHotelProducerPort;
 
     /**
-     * 🔑 Getter for Kafka Producer port
-     * @return port number of external Kafka Producer
+     * 🔗 Build the base URL for the Kafka Travel Producer
+     * @return complete HTTP URL to the Travel Producer service
      */
-    public int getKafkaProducerPort() {
-        return kafkaProducerPort;
+    public String getKafkaTravelProducerUrl() {
+        return "http://" + kafkaTravelProducerHost + ":" + kafkaTravelProducerPort + "/kafka";
+    }
+
+    /**
+     * 🔗 Build the base URL for the Kafka Hotel Producer
+     * @return complete HTTP URL to the Hotel Producer service
+     */
+    public String getKafkaHotelProducerUrl() {
+        return "http://" + kafkaHotelProducerHost + ":" + kafkaHotelProducerPort + "/kafka";
     }
 }

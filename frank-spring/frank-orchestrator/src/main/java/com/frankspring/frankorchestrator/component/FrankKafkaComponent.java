@@ -5,14 +5,8 @@ package com.frankspring.frankorchestrator.component;
  * -----------------------
  * Kafka listener component for FrankStack Travel Kafka Saga Orchestrator.
  *
- * CHANGES:
- * - 07 October 2025: Use injected ObjectMapper (configured with JavaTimeModule)
- *   to avoid Instant serialization errors.
- * - 07 October 2025: Do NOT close SSE stream on transport confirmation — keep
- *   emitting because saga may continue with further steps.
- *
  * Author: Edoardo Sabatini
- * Date: 08 October 2025
+ * Date: 21 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -131,9 +125,7 @@ public class FrankKafkaComponent {
             System.out.println("✅ [KAFKA-LISTENER] Saga sent transport confirmed for: " + sagaCorrelationId);
 
             // 1️⃣ Send to Hotel producer
-            String hotelServiceUrl = "http://localhost:" 
-                                    + appPropertiesComponent.getKafkaProducerPort() 
-                                    + "/kafka/sendhotel";
+            String hotelServiceUrl = appPropertiesComponent.getKafkaHotelProducerUrl() + "/sendhotel";
 
             restTemplate.postForObject(hotelServiceUrl, bookingMessage, String.class);
             System.out.println("🚀 [listenerBookTravel] BookingMessage sent to Hotel producer: " + hotelServiceUrl);
