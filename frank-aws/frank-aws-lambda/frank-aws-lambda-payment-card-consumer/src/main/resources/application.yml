@@ -1,11 +1,11 @@
-# application.yml
+# ================================================================
 # 🌐 Frank CardPayment Consumer Lambda Configuration
 # -------------------------------------------
 # Spring Boot Reactive microservice for AWS SNS/SQS payment flow.
 # Consumes CardPayment events from SQS queue, tested on LocalStack.
 #
 # Author: Edoardo Sabatini
-# Date: 15 October 2025
+# Date: 23 October 2025
 #
 # PURPOSE:
 # - Consumer service reads CardPayment events from SQS
@@ -14,6 +14,7 @@
 #
 # SERVICE:
 # - CardPayment Consumer: :18083
+# ================================================================
 
 server:
   port: 18083  # Consumer microservice port
@@ -35,19 +36,15 @@ spring:
       region:
         static: us-east-1
       endpoint:
-        sns: http://localhost:4566  # LocalStack SNS endpoint
-        sqs: http://localhost:4566  # LocalStack SQS endpoint
+        sns: http://frankstack-localstack:4566  # LocalStack SNS endpoint in Docker network
+        sqs: http://frankstack-localstack:4566  # LocalStack SQS endpoint in Docker network
 
 sqs:
   queue:
     cardpayment: cardpayment-queue  # SQS queue name for CardPayment
 
-# Webhook callback configuration
-callback:
-  orchestrator-url: ${ORCHESTRATOR_WEBHOOK_URL}
-  # 👇 Using environment variable instead of hardcoded URL
-  #     as per 12-Factor App best practice:
-  #     Configuration should be separated from code and injected at runtime.
+lambda:
+  name: PaymentCardLambda  # Lambda name property, if needed
 
 # Logging configuration
 logging:

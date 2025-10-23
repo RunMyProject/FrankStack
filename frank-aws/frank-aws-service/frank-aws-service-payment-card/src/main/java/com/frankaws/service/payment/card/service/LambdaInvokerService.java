@@ -22,11 +22,13 @@ package com.frankaws.service.payment.card.service;
 // • Returns a string with success message and Lambda payload ID
 //
 // Author: Edoardo Sabatini
-// Date: 15 October 2025
+// Date: 23 October 2025
 // ================================================================
 
+import com.frankaws.service.payment.card.component.AppPropertiesComponent;
 import com.frankaws.service.payment.card.models.PaymentCardMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.SdkBytes;
@@ -36,22 +38,30 @@ import software.amazon.awssdk.services.lambda.model.InvokeRequest;
 import software.amazon.awssdk.services.lambda.model.InvokeResponse;
 
 import java.net.URI;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Service
 public class LambdaInvokerService {
 
-    private static final String LAMBDA_NAME = "PaymentCardLambda";
-
-    // LocalStack endpoint inside Docker container network
-    private static final String LOCALSTACK_ENDPOINT = "http://172.17.0.1:4566"; 
-
+    private final AppPropertiesComponent appPropertiesComponent;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private LambdaClient lambdaClient;
 
-    // Initialize Lambda client pointing to LocalStack
-    private final LambdaClient lambdaClient = LambdaClient.builder()
-        .endpointOverride(URI.create(LOCALSTACK_ENDPOINT))
-        .region(Region.EU_CENTRAL_1)
-        .build();
+    public LambdaInvokerService(AppPropertiesComponent appPropertiesComponent) {
+        this.appPropertiesComponent = appPropertiesComponent;
+
+        System.out.println("🌐 Lambda Properties:");
+        System.out.println("   LocalStack Region: " + appPropertiesComponent.getAwsRegion());
+        System.out.println("   LocalStack Endpoint: " + appPropertiesComponent.getLocalstackEndpoint());
+        System.out.println("   Lambda Name: " + appPropertiesComponent.getLambdaName());
+
+        // Initialize Lambda client pointing to LocalStack
+        lambdaClient = LambdaClient.builder()
+                .endpointOverride(URI.create(appPropertiesComponent.getLocalstackEndpoint()))
+                .region(Region.of(appPropertiesComponent.getAwsRegion()))
+                .build();
+    }
 
     /**
      * Serialize the payment message and invoke the PaymentCard Lambda on LocalStack.
@@ -59,28 +69,33 @@ public class LambdaInvokerService {
      * @return Mono<String> containing the Lambda invocation result
      */
     public Mono<String> invokePaymentCardLambda(PaymentCardMessage message) {
+
+        // === 1. Log correlation info ===
+        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        System.out.println("🪪 [" + timestamp + "] Correlation ID: " + message.getSagaCorrelationId());
+
         return Mono.fromCallable(() -> {
-            // 1. Serialize Java object into JSON bytes
+
+            // === 2. Serialize Java object into JSON bytes ===
             SdkBytes payload = SdkBytes.fromUtf8String(objectMapper.writeValueAsString(message));
 
-            // 2. Build the Lambda invocation request
+            // === 3. Build the Lambda invocation request ===
             InvokeRequest request = InvokeRequest.builder()
-                .functionName(LAMBDA_NAME)
-                .payload(payload)
-                .build();
+                    .functionName(appPropertiesComponent.getLambdaName())
+                    .payload(payload)
+                    .build();
 
-            // 3. Execute synchronous call to Lambda (on LocalStack)
+            // === 4. Execute synchronous call to Lambda (on LocalStack) ===
             InvokeResponse response = lambdaClient.invoke(request);
 
-            // 4. Decode payload returned by Lambda
+            // === 5. Decode payload returned by Lambda ===
             String result = response.payload().asUtf8String();
 
-            // Handle Lambda errors
             if (response.functionError() != null) {
                 throw new RuntimeException("Lambda Error: " + result);
             }
 
-            // Return success message with Lambda ID
+            // === 6. Return success message ===
             return "Lambda Invoked Successfully: " + result;
 
         }).onErrorMap(e -> new RuntimeException("Error during Lambda invocation", e));

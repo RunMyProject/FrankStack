@@ -2,7 +2,7 @@
 # Dockerfile
 # frank-orchestrator (cache-optimized)
 # Author: Edoardo Sabatini
-# Date: 21 October 2025
+# Date: 23 October 2025
 # ================================================================
 
 # STAGE 1: Build (Maven + JDK)
@@ -12,13 +12,12 @@ FROM maven:3.9.8-eclipse-temurin-21 AS build
 
 WORKDIR /app
 
-# 1. Copy only pom.xml first to leverage Docker cache for dependencies
+# Copy only pom.xml first to leverage Docker cache for dependencies
 COPY pom.xml .
 
-# 2. Use BuildKit cache mount for Maven's local repository (.m2)
+# Use BuildKit cache mount for Maven's local repository (.m2)
 # The 'cache' type ensures that dependencies are stored outside the image layers.
 # This prevents Maven from re-downloading dependencies if pom.xml hasn't changed.
-# RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline
 RUN --mount=type=cache,target=/root/.m2 mvn dependency:go-offline -B
 
 # Copy source code and config

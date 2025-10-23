@@ -18,7 +18,7 @@
 #     • External service endpoints
 #
 # Author: Edoardo Sabatini
-# Date: 21 October 2025
+# Date: 23 October 2025
 
 spring:
   application:
@@ -53,3 +53,5 @@ external:
   frankstack-kafka-travel-producer-host: frankstack-kafka-travel-producer
   # 🌐 Kafka Hotel Producer service Docker address
   frankstack-kafka-hotel-producer-host: frankstack-kafka-hotel-producer
+  # 🌐 12-factors
+  aws-payment-service-url: ${AWS_PAYMENT_SERVICE_URL}

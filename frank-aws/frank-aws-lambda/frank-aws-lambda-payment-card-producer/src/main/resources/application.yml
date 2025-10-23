@@ -1,11 +1,11 @@
-# application.yml
+# ================================================================
 # 🌐 Frank CardPayment Producer Lambda Configuration
 # -------------------------------------------
 # Spring Boot Reactive microservice for AWS SNS/SQS payment flow.
 # Produces CardPayment events to SNS topic, tested on LocalStack.
 #
 # Author: Edoardo Sabatini
-# Date: 15 October 2025
+# Date: 23 October 2025
 #
 # PURPOSE:
 # - Producer service sends CardPayment events to SNS
@@ -14,6 +14,7 @@
 #
 # SERVICE:
 # - CardPayment Producer: :18082
+# ================================================================
 
 server:
   port: 18082  # Producer microservice port
@@ -35,12 +36,15 @@ spring:
       region:
         static: us-east-1
       endpoint:
-        sns: http://localhost:4566  # LocalStack SNS endpoint
-        sqs: http://localhost:4566  # LocalStack SQS endpoint
+        sns: http://frankstack-localstack:4566  # LocalStack SNS endpoint in Docker network
+        sqs: http://frankstack-localstack:4566  # LocalStack SQS endpoint in Docker network
 
 sns:
   topic:
     cardpayment: cardpayment-topic  # SNS topic name for CardPayment
+
+lambda:
+  name: PaymentCardLambda  # Lambda name now in properties
 
 # Logging configuration
 logging:

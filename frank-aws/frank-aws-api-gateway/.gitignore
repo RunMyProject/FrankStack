@@ -1,3 +1,17 @@
+# 
+# frank-aws-api-gateway
+# 
+#.gitignore
+# 
+# Author: Edoardo Sabatini
+# Date: 23 October 2025
+# 
+
+### JAR Distribution ###
+jar_dist/
+jar_tmp/
+
+### HELP ###
 HELP.md
 target/
 .mvn/wrapper/maven-wrapper.jar
@@ -31,3 +45,11 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Logs ###
+log.txt
+*.log
+
+### Temporary files ###
+*.tmp
+*.temp

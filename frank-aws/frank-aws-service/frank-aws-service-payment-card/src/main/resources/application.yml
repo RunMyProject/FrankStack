@@ -1,4 +1,9 @@
 # application.yml
+# 
+# frank-aws-service-payment-card
+# 
+# Author: Edoardo Sabatini
+# Date: 23 October 2025
 # ------------------------------------------------------
 # Configuration file for the Payment Card Wrapper Service (Port 18082)
 #
@@ -14,3 +19,8 @@
 #
 server:
   port: 18082
+
+aws:
+  endpoint: ${AWS_ENDPOINT}
+  lambda-name: ${AWS_LAMBDA_NAME}
+  region: ${AWS_DEFAULT_REGION}

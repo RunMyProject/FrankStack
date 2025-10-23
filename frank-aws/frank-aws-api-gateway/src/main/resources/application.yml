@@ -1,35 +1,56 @@
-# application.yml — Frank Payments API Gateway
+# ================================================================
+# application.yml — Frank AWS API Gateway
+# ------------------------------------------------
+# Spring Cloud Gateway configuration for FrankStack AWS Simulation.
+# Routes traffic between LocalStack AWS Lambdas and Payment Services.
+#
+# Author: Edoardo Sabatini
+# Date: 23 October 2025
+# ================================================================
+
 server:
   port: 18081
 
 spring:
   application:
-    name: frank-api-gateway
+    name: frank-aws-api-gateway
+
   main:
     web-application-type: reactive
 
   cloud:
     gateway:
       routes:
+        # ----------------------------
+        # Health Check - Ping Endpoint
+        # ----------------------------
         - id: ping-endpoint
           uri: http://localhost:18081
           predicates:
             - Path=/ping
+            - Method=GET
 
+        # ----------------------------
+        # Hello Test Route (PaymentCard Service)
+        # ----------------------------
         - id: hello-test-route
-          uri: http://localhost:18082
+          uri: http://frankstack-aws-service-payment-card:18082
           predicates:
             - Path=/hello
             - Method=GET
 
+        # ----------------------------
+        # Card Payment Producer (Lambda Trigger)
+        # ----------------------------
         - id: cardpayment-producer
-          uri: http://localhost:18082
+          uri: http://frankstack-aws-service-payment-card:18082
           predicates:
             - Path=/cardpayment/send/**
             - Method=POST
 
 logging:
   level:
+    root: INFO
     org.springframework.cloud.gateway: DEBUG
     reactor.netty.http.client: INFO
 
@@ -37,4 +58,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: "*"   # utile per debugging (actuator)
+        include: "*"

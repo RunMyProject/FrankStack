@@ -1,0 +1,106 @@
+# ================================================================
+# docker-compose.yml
+# FrankStack - AWS Simulation (LocalStack + AWS Microservices)
+# Structure: API Gateway + Service (PaymentCard) + Lambda (Producer/Consumer)
+#
+# Author: Edoardo Sabatini
+# Date: 23 October 2025
+# ================================================================
+
+version: '3.9'
+
+#############################################################
+#  NOTICE:
+#  
+# Explanation of the modification:
+# DATA_DIR=/var/localstack/data: sets the folder where LocalStack will save its data.
+# frank-aws_localstack_data:/var/localstack: mounts a dedicated Docker volume inside the container at /var/localstack.
+# This way, LocalStack will no longer attempt to execute rm -rf "/tmp/localstack" and the dedicated volume
+# is mounted in a directory that avoids conflicts on container startup.
+#  
+#############################################################
+
+services:
+  # ----------------------------
+  # FrankStack LocalStack (AWS Mock)
+  # ----------------------------
+  frankstack-localstack:
+    image: localstack/localstack:latest
+    container_name: frankstack-localstack
+    ports:
+      - "4566:4566"        # Main edge port for AWS services
+      - "4571:4571"
+    environment:
+      - SERVICES=lambda,s3,sns,sqs,dynamodb,cloudwatch
+      - DEBUG=1
+      - DATA_DIR=/var/localstack/data       # 👈 Changed: uses a different directory for data
+      - LAMBDA_EXECUTOR=docker-reuse
+      - LAMBDA_REMOVE_CONTAINERS=true
+      - AWS_DEFAULT_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    volumes:
+      - frank-aws_localstack_data:/var/localstack  # 👈 Changed: mount the volume in a different directory
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - frankstack-aws-net
+
+  # ----------------------------
+  # FrankStack AWS API Gateway
+  # ----------------------------
+  frankstack-aws-api-gateway:
+    build:
+      context: ./frank-aws-api-gateway
+      dockerfile: Dockerfile
+    container_name: frankstack-aws-api-gateway
+    depends_on:
+      - frankstack-localstack
+    ports:
+      - "18081:18081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - AWS_DEFAULT_REGION=eu-central-1  # 👈 Added
+      - AWS_ACCESS_KEY_ID=test           # 👈 Added
+      - AWS_SECRET_ACCESS_KEY=test       # 👈 Added 
+    volumes:
+      - maven-repo:/root/.m2
+    networks:
+      - frankstack-aws-net
+
+# ------------------------------------------------------------------------------------
+# AWS Service microservices
+# ------------------------------------------------------------------------------------
+
+  # ----------------------------
+  # Payment Card Service
+  # ----------------------------
+  frankstack-aws-service-payment-card:
+    build:
+      context: ./frank-aws-service/frank-aws-service-payment-card
+      dockerfile: Dockerfile
+    container_name: frankstack-aws-service-payment-card
+    depends_on:
+      - frankstack-localstack
+      - frankstack-aws-api-gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - AWS_DEFAULT_REGION=eu-central-1  # 👈 Added
+      - AWS_ACCESS_KEY_ID=test           # 👈 Added
+      - AWS_SECRET_ACCESS_KEY=test       # 👈 Added 
+      - AWS_ENDPOINT=http://frankstack-localstack:4566
+      - AWS_LAMBDA_NAME=frank-aws-lambda-payment-card-producer
+    volumes:
+      - maven-repo:/root/.m2
+    networks:
+      - frankstack-aws-net
+      
+# ------------------------------------------------------------------------------------
+# Networks and Volumes
+# ------------------------------------------------------------------------------------
+networks:
+  frankstack-aws-net:
+    driver: bridge
+
+volumes:
+  maven-repo: {}
+  frank-aws_localstack_data: {}   # ✅ Dedicated LocalStack volume

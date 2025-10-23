@@ -35,7 +35,7 @@ package com.frankaws.lambda.payment.card.consumer.lambda;
  * *************************************************************************
  *
  * Author: Edoardo Sabatini
- * Date: 16 October 2025
+ * Date: 23 October 2025
  */
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -62,10 +62,12 @@ public class PaymentCardLambda implements RequestHandler<SNSEvent, Void> {
 
     @Override
     public Void handleRequest(SNSEvent event, Context context) {
-        context.getLogger().log("=== PaymentCardLambda Consumer Invoked ===");
 
         String url = ORCHESTRATOR_WEBHOOK_URL;
         System.out.println("🌐 Callback URL: " + url);
+        context.getLogger().log("🌐 Callback URL: " + url);
+
+        context.getLogger().log("=== PaymentCardLambda Consumer Invoked ===");
         
         for (SNSEvent.SNSRecord record : event.getRecords()) {
             String jsonMessage = record.getSNS().getMessage();

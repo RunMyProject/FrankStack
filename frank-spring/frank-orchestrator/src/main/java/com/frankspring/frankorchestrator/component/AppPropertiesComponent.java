@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
  * Centralized component to store application-level configuration values.
  *
  * Author: Edoardo Sabatini
- * Date: 21 October 2025
+ * Date: 23 October 2025
  */
 
 @Component
@@ -42,4 +42,12 @@ public class AppPropertiesComponent {
     public String getKafkaHotelProducerUrl() {
         return "http://" + kafkaHotelProducerHost + ":" + kafkaHotelProducerPort + "/kafka";
     }
+
+    @Value("${external.aws-payment-service-url}")
+    private String awsPaymentServiceUrl;
+
+    public String getAwsPaymentServiceUrl() {
+        return awsPaymentServiceUrl;
+    }
+
 }

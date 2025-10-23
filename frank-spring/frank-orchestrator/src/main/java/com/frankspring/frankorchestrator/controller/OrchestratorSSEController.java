@@ -17,7 +17,7 @@ package com.frankspring.frankorchestrator.controller;
  * - Kafka response handling via FrankKafkaListener
  * 
  * Author: Edoardo Sabatini
- * Date: 21 October 2025
+ * Date: 23 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -351,7 +351,9 @@ public class OrchestratorSSEController {
         paymentJson.forEach((key, value) -> System.out.println(key + ": " + value));
 
         // 🌐 Call the internal AWS Lambda bridge
-        String awsServiceUrl = "http://localhost:18081/cardpayment/send";
+        String awsServiceUrl = appPropertiesComponent.getAwsPaymentServiceUrl();
+        System.out.println("🌐 [BRIDGE] AWS Service Url:" + awsServiceUrl);
+
         Map<String, Object> awsPayload = null;
         
         try {
