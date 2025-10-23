@@ -1,5 +1,73 @@
 # FrankStack
 
+# 📅 Update 23 October 2025 — Released Docker Compose for AWS Payment Service 🎃
+
+## ⚙️ Summary
+
+Today, the **Docker Compose configuration** for the **AWS Payment Service** was released with full success!
+
+> **⚠️ IMPORTANT:** This is a complete and complex **enterprise application** — the typical **end-to-end (E2E) system** — so pay close attention to the configurations.
+
+---
+
+## 🔧 Pre-Launch Configuration
+
+Before launching, you **MUST** edit two configuration files to match your machine IP:
+
+### 1️⃣ `docker-compose.yml`
+**Location:** `frank-aws/` (line 28)  
+**Set your:** `AWS_PAYMENT_SERVICE_URL`
+```yaml
+- AWS_PAYMENT_SERVICE_URL=http://172.17.0.1:18081/cardpayment/send  # line 28
+```
+
+### 2️⃣ `deploy-lambda-docker.sh`
+**Location:** `frank-aws/frank-aws-api-gateway/` (line 22)  
+**Set your:** `ORCHESTRATOR_WEBHOOK_URL`
+```bash
+ORCHESTRATOR_WEBHOOK_URL="http://172.17.0.1:8081/frankcallback/card-payment-complete"  # line 22
+```
+
+> **💡 Why?** These configurations are required because the batch script registers the AWS Lambda functions on your LocalStack instance. Running it ensures that your orchestrator can communicate with the payment service properly.
+
+---
+
+## 🚀 Start the Stacks
+
+**⚠️ ORDER MATTERS!** Start in this exact sequence:
+```bash
+# 1️⃣ Start the Orchestrator FIRST
+cd /path/to/FrankStack/frank-spring
+docker-compose up -d --build
+
+# 2️⃣ Then start the AWS Payment Service (contains Lambda registrations)
+cd /path/to/FrankStack/frank-aws
+./start-full-stack.sh
+```
+
+---
+
+## 🛑 Stop the Stacks
+
+**⚠️ REVERSE ORDER!** Stop in this exact sequence:
+```bash
+# 1️⃣ Stop AWS Payment Service FIRST
+cd /path/to/FrankStack/frank-aws
+./stop-full-stack.sh
+
+# 2️⃣ Stop Orchestrator completely
+cd /path/to/FrankStack/frank-spring
+docker-compose down
+```
+
+---
+
+## 🍏 Golden Rule
+
+> **Always start the orchestrator BEFORE the AWS Payment Service and stop in REVERSE ORDER** to guarantee the Lambda functions are registered correctly and communication works end-to-end.
+
+---
+
 *📅 Update 21 October 2025 — Docker Compose & Shell Adjustments*
 
 ⚙️ **Summary:**
