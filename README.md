@@ -49,7 +49,7 @@ cd /path/to/FrankStack/frank-aws
 
 ## 🛑 Stop the Stacks
 
-**⚠️ REVERSE ORDER!** Stop in this exact sequence:
+**⚠️ REVERSE ORDER!** Stop in this exact sequence to ensure a *graceful shutdown*:
 ```bash
 # 1️⃣ Stop AWS Payment Service FIRST
 cd /path/to/FrankStack/frank-aws
