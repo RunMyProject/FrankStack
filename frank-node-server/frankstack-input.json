@@ -1,0 +1,30 @@
+{
+  "aIContext": {
+    "system": {
+      "maxWords": 50,
+      "user": "Edoardo",
+      "userLang": "IT",
+      "aiName": "FrankStack",
+      "currentDateTime": "2025-10-27T14:00:00+02:00",
+      "weather": "Sereno",
+      "temperatureWeather": 22,
+      "bookingSystemEnabled": false
+    },
+    "form": {
+      "tripDeparture": "Milan",
+      "tripDestination": "",
+      "dateTimeRoundTripDeparture": "",
+      "dateTimeRoundTripReturn": "",
+      "durationOfStayInDays": 0,
+      "transport": "",
+      "budget": 0,
+      "people": 0,
+      "starsOfHotel": 0,
+      "luggages": 0
+    },
+    "question": "Ciao FrankStack! Che ore sono?",
+    "answer": "?"
+  },
+  "provider": "ollama",
+  "debug": true
+}

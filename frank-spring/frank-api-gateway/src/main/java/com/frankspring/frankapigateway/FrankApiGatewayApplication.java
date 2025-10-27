@@ -41,7 +41,7 @@
  *       - MVC config is only for blocking Servlet apps, not reactive apps.
  *
  * Author: Edoardo Sabatini
- * Date: 30 September 2025
+ * Date: 27 October 2025
  */
 
 package com.frankspring.frankapigateway;
@@ -70,7 +70,10 @@ public class FrankApiGatewayApplication {
         CorsConfiguration config = new CorsConfiguration();
 
         // Allowed origin: React dev server
-        config.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
+        config.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",  // dev server
+                 "http://localhost"        // container / prod
+        ));
 
         // Allowed HTTP methods
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));

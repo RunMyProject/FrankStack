@@ -6,7 +6,7 @@
  * Status updates are tracked with a single object { msg, status }.
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 10 October 2025
+ * Date: 27 October 2025
  */
 
 // ===========================================
@@ -98,7 +98,7 @@ import { formatDateTime } from "../utils/datetime";
 import { sagaManager } from "../utils/BookingSagaManager";
 // NEW: Import the user data objects for test users
 
-import { UserTestDataEng, UserTestDataIta } from "../store/UserEdoardoDB";
+import { UserEdoardoData, UserTestDataEng, UserTestDataIta } from "../store/UserEdoardoDB";
 
 const Chat: React.FC = () => {
   // -----------------------------
@@ -194,28 +194,57 @@ const Chat: React.FC = () => {
   };
 
   const generateTestSummary = (context: AIContext): string => {
-    const { form } = context;
-    const transportIcon = getTransportIcon(form.travelMode);
-    
-    return `🧪 Avvio di test di prenotazione in corso...
+          const { form } = context;
+          const transportIcon = getTransportIcon(form.travelMode);
+          
+          return `🧪 Avvio di test di prenotazione in corso...
 
-📋 Riepilogo Viaggio:
-• Partenza: ${form.tripDeparture}
-• Destinazione: ${form.tripDestination}
-• Data andata: ${formatElegantDate(form.dateTimeRoundTripDeparture)}
-• Data ritorno: ${formatElegantDate(form.dateTimeRoundTripReturn)}
-• Giorni: ${form.durationOfStayInDays}
-• Trasporto: ${transportIcon}
-• Budget: €${form.budget}
-• Persone: ${renderWithIcons(form.people, "👤", 10)}
-• Stelle Hotel: ${renderWithIcons(form.starsOfHotel, "⭐", 7)}
-• Bagagli: ${renderWithIcons(form.luggages, "🧳", 10)}
+      📋 Riepilogo Viaggio:
+      • Partenza: ${form.tripDeparture}
+      • Destinazione: ${form.tripDestination}
+      • Data andata: ${formatElegantDate(form.dateTimeRoundTripDeparture)}
+      • Data ritorno: ${formatElegantDate(form.dateTimeRoundTripReturn)}
+      • Giorni: ${form.durationOfStayInDays}
+      • Trasporto: ${transportIcon}
+      • Budget: €${form.budget}
+      • Persone: ${renderWithIcons(form.people, "👤", 10)}
+      • Stelle Hotel: ${renderWithIcons(form.starsOfHotel, "⭐", 7)}
+      • Bagagli: ${renderWithIcons(form.luggages, "🧳", 10)}
 
-🚀 Avvio del processo Saga...`;
+      🚀 Avvio del processo Saga...`;
   };
 
-    const activateTestMode = useCallback((force: boolean) => {
-    if(!force) if (!ENABLE_TEST_MODE || testModeActivated) return;
+  const setEdoardoTestData = (): void => {
+    const store = useAuthStore.getState();
+
+    // Se non ci sono già metodi di pagamento
+    if (store.savedPaymentMethods.length === 0) {
+      const testUserData: StandardUserData = UserEdoardoData;
+
+      console.log(`🧪 Initializing Edoardo test user: ${testUserData.username} (${testUserData.defaultLanguage})`);
+
+      if (testUserData.defaultPaymentMethods?.length) {
+        testUserData.defaultPaymentMethods.forEach(card => store.addPaymentMethod(card));
+      }
+
+      // Stampiamo a debug tutti i metodi
+      if (store.printAllPaymentMethods) {
+        store.printAllPaymentMethods();
+      }
+
+      // Aggiorniamo anche il contesto AI
+      const aiContext = store.aIContext;
+      useAuthStore.getState().updateAIContext({ ...aiContext });
+    } else {
+      console.log("✅ Edoardo test data already initialized, skipping.");
+    }
+  };
+
+  const activateTestMode = useCallback((force: boolean) => {
+         
+    if(!force) if (!ENABLE_TEST_MODE || testModeActivated) {
+      return;
+    }
 
     console.log("🧪 Attivazione Test Mode");
     setTestModeActivated(true);
@@ -414,6 +443,9 @@ const Chat: React.FC = () => {
   // Welcome message setup + TEST MODE ACTIVATION
   // -----------------------------
   useEffect(() => {
+
+    setEdoardoTestData();
+    
     const currentLang = userLang ?? "EN";
     if (lastWelcomeLangRef.current === currentLang) return;
     lastWelcomeLangRef.current = currentLang;

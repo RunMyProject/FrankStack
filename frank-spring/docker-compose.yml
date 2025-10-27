@@ -1,9 +1,10 @@
 # ================================================================
 # docker-compose.yml
 # FrankStack - API Gateway + Kafka + Orchestrator
-# Optimized: avoid downloading Maven dependencies every build
+# Optimized: using .env file for configuration
+# 
 # Author: Edoardo Sabatini
-# Date: 23 October 2025
+# Date: 27 October 2025
 # ================================================================
 
 version: '3.9'
@@ -22,12 +23,12 @@ services:
       - frankstack-redis
       - frankstack-kafka
     ports:
-      - "8080:8080"
+      - "${ORCHESTRATOR_PORT}:8080"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - AWS_PAYMENT_SERVICE_URL=http://172.17.0.1:18081/cardpayment/send # 12-FACTOR
+      - SPRING_PROFILES_ACTIVE=${ORCHESTRATOR_PROFILE}
+      - AWS_PAYMENT_SERVICE_URL=${AWS_PAYMENT_SERVICE_URL}
     volumes:
-      - maven-repo:/root/.m2   # persist Maven dependencies
+      - maven-repo:/root/.m2
     networks:
       - frankstack-net
       
@@ -40,11 +41,11 @@ services:
       dockerfile: Dockerfile
     container_name: frankstack-api-gateway
     ports:
-      - "8081:8081"
+      - "${API_GATEWAY_PORT}:8081"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${API_GATEWAY_PROFILE}
     volumes:
-      - maven-repo:/root/.m2   # persist Maven dependencies
+      - maven-repo:/root/.m2
     networks:
       - frankstack-net
 
@@ -55,12 +56,12 @@ services:
     image: redpandadata/redpanda:latest
     container_name: frankstack-kafka
     ports:
-      - "9092:9092"
+      - "${KAFKA_PORT}:9092"
     command:
       - redpanda start
       - --overprovisioned
-      - --smp 1
-      - --memory 1G
+      - --smp ${KAFKA_SMP}
+      - --memory ${KAFKA_MEMORY}
       - --reserve-memory 0M
       - --node-id 0
       - --kafka-addr PLAINTEXT://0.0.0.0:9092
@@ -85,7 +86,7 @@ services:
       - frankstack-kafka
       - frankstack-orchestrator
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${KAFKA_PROFILE}
     volumes:
       - maven-repo:/root/.m2
     networks:
@@ -100,7 +101,7 @@ services:
       - frankstack-kafka
       - frankstack-orchestrator
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${KAFKA_PROFILE}
     volumes:
       - maven-repo:/root/.m2
     networks:
@@ -119,7 +120,7 @@ services:
       - frankstack-kafka
       - frankstack-orchestrator
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${KAFKA_PROFILE}
     volumes:
       - maven-repo:/root/.m2
     networks:
@@ -134,7 +135,7 @@ services:
       - frankstack-kafka
       - frankstack-orchestrator
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=${KAFKA_PROFILE}
     volumes:
       - maven-repo:/root/.m2
     networks:
@@ -146,7 +147,7 @@ services:
     image: redis:7.0-alpine
     container_name: frankstack-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
     networks:
       - frankstack-net
 

@@ -11,8 +11,8 @@
  *   - Final AI responses
  *   - Error handling and safe parsing of server messages
  *
- * Author: Assistant (adapted for Edoardo)
- * Date: 21 September 2025
+ * Author: Edoardo Sabatini
+ * Date: 27 October 2025
  */
 
 import { useRef } from 'react';
@@ -50,9 +50,27 @@ export const useAI = (
   apiKey: string, 
   onStatus?: OnStatusCallback
 ) => {
-  const serverUrl = 'ws://localhost:3000';
-  const TIMEOUT_MS = 120000; // 2 minutes
 
+  /**
+   * Environment variables
+   * ------------------------------------------------------------
+   * Loaded from Vite at build time (see .env and env.d.ts)
+   */
+  const serverUrl =
+    import.meta.env.VITE_AI_SERVER_URL || 'ws://localhost:3000';
+  const TIMEOUT_MS = parseInt(
+    import.meta.env.VITE_AI_TIMEOUT_MS || '5120000',
+    10
+  );
+
+  /*
+   Debug print of environment variables
+   console.log('🌍 [useAI] Loaded environment variables:');
+   console.log('   VITE_AI_SERVER_URL =', serverUrl);
+   console.log('   VITE_AI_TIMEOUT_MS =', TIMEOUT_MS)
+   ------------------------------------------------------------ 
+  */
+  
   // Ref to store the active WebSocket connection
   const currentWebSocketRef = useRef<WebSocket | null>(null);
 

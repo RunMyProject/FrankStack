@@ -1,10 +1,11 @@
 # ================================================================
-# docker-compose.yml
+# docker-compose.aws.yml
 # FrankStack - AWS Simulation (LocalStack + AWS Microservices)
 # Structure: API Gateway + Service (PaymentCard) + Lambda (Producer/Consumer)
+# Optimized: using .env.aws file for configuration
 #
 # Author: Edoardo Sabatini
-# Date: 23 October 2025
+# Date: 27 October 2025
 # ================================================================
 
 version: '3.9'
@@ -28,19 +29,19 @@ services:
     image: localstack/localstack:latest
     container_name: frankstack-localstack
     ports:
-      - "4566:4566"        # Main edge port for AWS services
-      - "4571:4571"
+      - "${LOCALSTACK_PORT}:4566"
+      - "${LOCALSTACK_LEGACY_PORT}:4571"
     environment:
-      - SERVICES=lambda,s3,sns,sqs,dynamodb,cloudwatch
-      - DEBUG=1
-      - DATA_DIR=/var/localstack/data       # 👈 Changed: uses a different directory for data
-      - LAMBDA_EXECUTOR=docker-reuse
-      - LAMBDA_REMOVE_CONTAINERS=true
-      - AWS_DEFAULT_REGION=eu-central-1
-      - AWS_ACCESS_KEY_ID=test
-      - AWS_SECRET_ACCESS_KEY=test
+      - SERVICES=${LOCALSTACK_SERVICES}
+      - DEBUG=${LOCALSTACK_DEBUG}
+      - DATA_DIR=${LOCALSTACK_DATA_DIR}
+      - LAMBDA_EXECUTOR=${LOCALSTACK_LAMBDA_EXECUTOR}
+      - LAMBDA_REMOVE_CONTAINERS=${LOCALSTACK_LAMBDA_REMOVE_CONTAINERS}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
-      - frank-aws_localstack_data:/var/localstack  # 👈 Changed: mount the volume in a different directory
+      - frank-aws_localstack_data:/var/localstack
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - frankstack-aws-net
@@ -56,12 +57,12 @@ services:
     depends_on:
       - frankstack-localstack
     ports:
-      - "18081:18081"
+      - "${AWS_API_GATEWAY_PORT}:18081"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - AWS_DEFAULT_REGION=eu-central-1  # 👈 Added
-      - AWS_ACCESS_KEY_ID=test           # 👈 Added
-      - AWS_SECRET_ACCESS_KEY=test       # 👈 Added 
+      - SPRING_PROFILES_ACTIVE=${AWS_API_GATEWAY_PROFILE}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
     volumes:
       - maven-repo:/root/.m2
     networks:
@@ -83,12 +84,12 @@ services:
       - frankstack-localstack
       - frankstack-aws-api-gateway
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
-      - AWS_DEFAULT_REGION=eu-central-1  # 👈 Added
-      - AWS_ACCESS_KEY_ID=test           # 👈 Added
-      - AWS_SECRET_ACCESS_KEY=test       # 👈 Added 
-      - AWS_ENDPOINT=http://frankstack-localstack:4566
-      - AWS_LAMBDA_NAME=frank-aws-lambda-payment-card-producer
+      - SPRING_PROFILES_ACTIVE=${AWS_SERVICE_PROFILE}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_ENDPOINT=${AWS_ENDPOINT}
+      - AWS_LAMBDA_NAME=${AWS_LAMBDA_NAME}
     volumes:
       - maven-repo:/root/.m2
     networks:
@@ -103,4 +104,5 @@ networks:
 
 volumes:
   maven-repo: {}
-  frank-aws_localstack_data: {}   # ✅ Dedicated LocalStack volume
+  frank-aws_localstack_data: {}
+  

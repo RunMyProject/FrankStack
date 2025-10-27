@@ -3,6 +3,7 @@
 # deploy-lambda-docker.sh
 # -------------------------------------------------------
 # Optimized Lambda deployment using dynamic JAR discovery
+# - 12-FACTOR compliant: reads from environment variables
 # - Discovers all JAR files in distribution directory  
 # - Deploys each Lambda with appropriate configuration
 # - Handles SNS topics and subscriptions automatically
@@ -11,15 +12,32 @@
 # - Logging to file for audit trail
 #
 # Author: Edoardo Sabatini
-# Date: 23 October 2025
+# Date: 27 October 2025
 # ==========================================================
 
 set -e
 
 # -------------------------------------------------------
-# 12-FACTOR 
+# LOAD ENVIRONMENT VARIABLES
 # -------------------------------------------------------
-ORCHESTRATOR_WEBHOOK_URL="http://172.17.0.1:8081/frankcallback/card-payment-complete"
+ENV_FILE="${ENV_FILE:-.env}"
+
+if [ -f "$ENV_FILE" ]; then
+    set -a  # automatically export all variables
+    . "$ENV_FILE"
+    set +a
+else
+    echo "⚠️  Warning: $ENV_FILE not found, using defaults"  > env_error.txt
+fi
+
+
+# -------------------------------------------------------
+# 12-FACTOR CONFIGURATION
+# Read from environment variables with fallback defaults
+# -------------------------------------------------------
+
+# Orchestrator webhook URL (can be set via .env or environment)
+ORCHESTRATOR_WEBHOOK_URL="${ORCHESTRATOR_WEBHOOK_URL:-http://localhost:8081/frankcallback/card-payment-complete}"
 
 # -------------------------------------------------------
 # GLOBAL CONFIGURATION

@@ -9,13 +9,20 @@
  * - Waits for real GPS data before showing weather
  * 
  * Author: Edoardo Sabatini
- * Date: 29 August 2025
+ * Date: 27 October 2025
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import type { Lang, WeatherData, LocationData } from '../types/chat';
 import { weatherCodeMap } from '../utils/weatherCodes';
 
+console.log("VITE: ENV " + JSON.stringify(import.meta.env));
+
+const locationProxyUrl = import.meta.env.VITE_LOCATION_PROXY_URL || 'http://localhost:3000/api/location/reverse';
+
+/**
+ * Helper function to fetch with a timeout
+ */
 const fetchWithTimeout = async (url: string, timeout = 10000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
@@ -32,30 +39,52 @@ const fetchWithTimeout = async (url: string, timeout = 10000) => {
   }
 };
 
+/**
+ * Map internal chat Lang type to Open-Meteo language codes
+ */
+const langMap: Record<Lang, string> = {
+  Italian: 'it',
+  English: 'en'
+};
+
+/**
+ * Map internal chat Lang type to IT/EN keys in weatherCodeMap
+ */
+const langKey: Record<Lang, 'IT' | 'EN'> = {
+  Italian: 'IT',
+  English: 'EN'
+};
+
+/**
+ * Get current location using browser geolocation and reverse geocoding
+ */
 const getCurrentLocation = (lang: Lang): Promise<LocationData> => {
+
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) return reject(new Error('Geolocation not supported'));
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         try {
-          const data = await fetchWithTimeout(
-            `https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json&accept-language=${lang.toLowerCase()}`,
-            15000
-          );
+              // -----------------------------------
+              // Reverse geocoding via backend proxy
+              // -----------------------------------
+              const query = `?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json&accept-language=${langMap[lang]}`;
+            
+              const data = await fetchWithTimeout(`${locationProxyUrl}${query}`, 15000);
+              
+              const city =
+                data.address?.city ||
+                data.address?.town ||
+                data.address?.village ||
+                data.address?.municipality ||
+                data.address?.county ||
+                data.address?.state ||
+                'Unknown Location';
 
-          const city =
-            data.address?.city ||
-            data.address?.town ||
-            data.address?.village ||
-            data.address?.municipality ||
-            data.address?.county ||
-            data.address?.state ||
-            'Unknown Location';
-
-          resolve({ city, lat: position.coords.latitude, lon: position.coords.longitude });
+              resolve({ city, lat: position.coords.latitude, lon: position.coords.longitude });
         } catch (err) {
-          if (err instanceof Error) {
+          if(err instanceof Error) {
             resolve({ city: 'Unknown Location', lat: position.coords.latitude, lon: position.coords.longitude });
           }
         }
@@ -66,6 +95,9 @@ const getCurrentLocation = (lang: Lang): Promise<LocationData> => {
   });
 };
 
+/**
+ * Custom hook to fetch current weather and track location
+ */
 export const useCurrentWeather = (lang: Lang) => {
   const [location, setLocation] = useState<LocationData | null>(null);
   const [weather, setWeather] = useState<WeatherData | null>(null);
@@ -74,26 +106,30 @@ export const useCurrentWeather = (lang: Lang) => {
   const [error, setError] = useState<string | null>(null);
   const intervalRef = useRef<number | null>(null);
 
+  /**
+   * Fetch weather data for given coordinates
+   */
   const loadWeather = useCallback(async (lat: number, lon: number) => {
     try {
       setIsLoadingWeather(true);
       setError(null);
 
       const data = await fetchWithTimeout(
-        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&timezone=auto&language=${langMap[lang]}`
       );
 
       if (!data.current_weather) throw new Error('Weather data unavailable');
 
       const current = data.current_weather;
+
+      const key = langKey[lang];
       const entry = weatherCodeMap[current.weathercode] || [
-        "❓", 
+        "❓",
         { IT: "Condizioni sconosciute", EN: "Unknown conditions" }
       ];
 
       setWeather(prev => {
-        const newWeather = { icon: entry[0], desc: entry[1][lang], temp: Math.round(current.temperature) };
-        // ✅ Aggiorna solo se cambia realmente
+        const newWeather = { icon: entry[0], desc: entry[1][key], temp: Math.round(current.temperature) };
         if (!prev || prev.icon !== newWeather.icon || prev.temp !== newWeather.temp || prev.desc !== newWeather.desc) {
           return newWeather;
         }
@@ -105,7 +141,7 @@ export const useCurrentWeather = (lang: Lang) => {
       setError(err instanceof Error ? err.message : 'Unknown error');
       setWeather({
         icon: "⚠",
-        desc: lang === 'IT' ? "Weather unavailable" : "Weather unavailable",
+        desc: lang === 'Italian' ? "Weather unavailable" : "Weather unavailable",
         temp: 0
       });
     } finally {
@@ -113,7 +149,9 @@ export const useCurrentWeather = (lang: Lang) => {
     }
   }, [lang]);
 
-  // Initialization
+  /**
+   * Initialize location and weather on mount / lang change
+   */
   useEffect(() => {
     setIsLoadingLocation(true);
     setError(null);
@@ -131,7 +169,9 @@ export const useCurrentWeather = (lang: Lang) => {
       });
   }, [lang, loadWeather]);
 
-  // Auto refresh every 30 minutes
+  /**
+   * Auto refresh weather every 30 minutes
+   */
   useEffect(() => {
     if (!location || isLoadingLocation) return;
 
@@ -139,7 +179,7 @@ export const useCurrentWeather = (lang: Lang) => {
 
     intervalRef.current = window.setInterval(() => {
       loadWeather(location.lat, location.lon);
-    }, 1800000);
+    }, 1800000); // 30 minutes
 
     return () => {
       if (intervalRef.current) {
@@ -149,7 +189,9 @@ export const useCurrentWeather = (lang: Lang) => {
     };
   }, [location, isLoadingLocation, loadWeather]);
 
-  // Update only description on language change, without loop infinito
+  /**
+   * Update only description when language changes
+   */
   useEffect(() => {
     if (!weather || isLoadingWeather || weather.icon === '⚠') return;
 
@@ -160,9 +202,10 @@ export const useCurrentWeather = (lang: Lang) => {
     if (!currentCode) return;
 
     const entry = weatherCodeMap[parseInt(currentCode)];
-    const newDesc = entry[1][lang];
+    const key = langKey[lang];
+    const newDesc = entry[1][key];
 
-    if (weather.desc !== newDesc) { // ✅ Aggiorna solo se diversa
+    if (weather.desc !== newDesc) {
       setWeather(prev => prev ? { ...prev, desc: newDesc } : null);
     }
   }, [lang, weather, isLoadingWeather]);

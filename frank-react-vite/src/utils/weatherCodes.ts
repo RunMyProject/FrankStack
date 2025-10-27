@@ -7,17 +7,15 @@
  * - Used to display weather conditions in the chat application
  * 
  * Author: Edoardo Sabatini
- * Date: 28 August 2025
+ * Date: 27 October 2025
  */
-
-import type { Lang } from '../types/chat';
 
 /**
  * Weather code mapping.
  * Key: numeric weather code
  * Value: tuple of [icon, localized descriptions]
  */
-export const weatherCodeMap: Record<number, [string, Record<Lang, string>]> = {
+export const weatherCodeMap: Record<number, [string, Record<'IT' | 'EN', string>]> = {
   0: ["☀", { IT: "Sereno", EN: "Clear" }],
   1: ["🌤", { IT: "Prevalentemente sereno", EN: "Mostly clear" }],
   2: ["⛅", { IT: "Parzialmente nuvoloso", EN: "Partly cloudy" }],

@@ -1,0 +1,114 @@
+# ================================================================
+# docker-compose.yml
+# FrankStack - AI Core (Minimal, Isolated Setup for Ollama)
+#
+# 12-Factor friendly: environment variables remain in .env,
+# but network top-level keys are declared explicitly to avoid
+# variable-substitution pitfalls with Docker Compose.
+#
+# Author: Edoardo Sabatini
+# Date: 27 October 2025
+# ================================================================
+
+version: '3.9'
+
+services:
+
+  # ------------------------------------------------------------------------------------
+  # AI CORE - ACTIVE SERVICE
+  # ------------------------------------------------------------------------------------
+  
+  # ------------------------------------------------------------------------------
+  # 1. FrankStack Ollama Server (LLM Core) - ACTIVE
+  # ------------------------------------------------------------------------------
+  frankstack-ollama:
+    image: ollama/ollama:latest
+    container_name: frankstack-ollama
+    # Expose Ollama API port (from .env)
+    ports:
+      - "${OLLAMA_PORT}:${OLLAMA_PORT}"
+    # Environment variables from .env
+    env_file:
+      - .env
+    # Mount host models directory into container
+    volumes:
+      - ${HOST_MODELS_DIR}/models:${CONTAINER_MODELS_DIR}
+    networks:
+      - frankstack-ai-net
+    restart: always
+
+  # ------------------------------------------------------------------------------
+  # 2. FrankStack Node.js Server (AI Logic / Proxy / BFF)
+  # ------------------------------------------------------------------------------
+  frankstack-node-server:
+    build:
+      context: ./frank-node-server
+      dockerfile: Dockerfile
+    container_name: frankstack-node-server
+    # Dependencies: ensure Ollama container starts first
+    depends_on:
+      - frankstack-ollama
+    # Port mapping from host to container
+    ports:
+      - "${NODE_PORT}:${NODE_PORT}"
+    # Environment variables are loaded from .env
+    env_file:
+      - .env
+    # Networks used by this service
+    networks:
+      - frankstack-ai-net
+    restart: unless-stopped
+    volumes:
+      - ./frank-node-server:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # -------------------------
+  # 3. React Frontend (Vite)
+  # -------------------------
+  frankstack-react-vite:
+    build:
+      context: ./frank-react-vite
+      dockerfile: Dockerfile
+    container_name: frankstack-react-vite
+    ports:
+      - "80:80"
+    depends_on:
+      - frankstack-node-server
+    networks:
+      - frankstack-ai-net
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./frank-react-vite:/usr/src/app
+      - /usr/src/app/node_modules
+
+  # ------------------------------------------------------------------------------
+  # 4. FrankStack Node.js Stripe Server (Payment Token Handler)
+  # ------------------------------------------------------------------------------
+  frankstack-node-stripe:
+    build:
+      context: ./frank-node-stripe
+      dockerfile: Dockerfile
+    container_name: frankstack-node-stripe
+    depends_on:
+      - frankstack-node-server
+    ports:
+      - "${STRIPE_PORT}:${STRIPE_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - ./frank-node-stripe:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - frankstack-ai-net
+    restart: unless-stopped
+
+# ------------------------------------------------------------------------------------
+# NETWORK CONFIGURATION
+# ------------------------------------------------------------------------------------
+networks:
+  # FrankStack AI Network (Isolated for AI Services)
+  frankstack-ai-net:
+    driver: bridge
+# End of docker-compose.yml

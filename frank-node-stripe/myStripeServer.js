@@ -5,7 +5,7 @@
  * For demo purposes only; no real Stripe integration.
  *
  * Author: Edoardo Sabatini
- * Date: 10 October 2025
+ * Date: 27 October 2025
  */
 
 import express from 'express';
@@ -40,7 +40,12 @@ app.post('/getToken', (req, res) => {
   });
 });
 
-const PORT = 4000;
-app.listen(PORT, () => {
-  console.log(`🚀 MyStripeServer running on http://localhost:${PORT}`);
+const STRIPE_PORT = parseInt(process.env.STRIPE_PORT || '4000', 10);
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || 'dummy_key_for_local';
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'dummy_webhook';
+const STRIPE_CANCEL_URL = process.env.STRIPE_CANCEL_URL || 'http://localhost:4000/cancel';
+const STRIPE_SUCCESS_URL = process.env.STRIPE_SUCCESS_URL || 'http://localhost:4000/success';
+
+app.listen(STRIPE_PORT, () => {
+  console.log(`🚀 MyStripeServer running on http://localhost:${STRIPE_PORT}`);
 });
