@@ -1,5 +1,74 @@
 # FrankStack
 
+## 📅 Update 27 October 2025 — Consolidated Docker & Node/Stripe Services 🎃🎃
+
+### ⚙️ Summary
+
+Today we finalized the Docker Compose setup for the full FrankStack system, including:
+
+* Orchestrator (Spring Boot services)
+* Node server services (API + Stripe + AI/Webhooks)
+* React frontend
+* AWS Payment Service (LocalStack, Lambda registration, etc.)
+
+### 🧩 Project Structure
+
+```
+FrankStack/
+├─ frank-aws/
+├─ frank-node-server/
+├─ frank-node-stripe/
+├─ frank-react-vite/
+├─ frank-spring/
+├─ .env
+├─ docker-compose.yml
+```
+
+Each module has its own `.env` file for customization (ports, keys, URLs, etc.).
+
+### 🚀 Start the Stacks
+
+⚠️ **ORDER MATTERS!** Images are built automatically with `--build` flag.
+
+```bash
+# 1️⃣ Start the Orchestrator FIRST
+cd /path/to/FrankStack/frank-spring
+docker-compose up -d --build
+
+# 2️⃣ Start the main stack (React + Node services)
+cd /path/to/FrankStack
+docker-compose up -d --build
+
+# 3️⃣ Start the AWS Payment Service (registers Lambdas in LocalStack)
+cd /path/to/FrankStack/frank-aws
+./start-full-stack.sh
+```
+
+### 🛑 Stop the Stacks
+
+⚠️ **Use reverse order for graceful shutdown:**
+
+```bash
+# 1️⃣ Stop AWS Payment Service FIRST
+cd /path/to/FrankStack/frank-aws
+./stop-full-stack.sh
+
+# 2️⃣ Stop main stack
+cd /path/to/FrankStack
+docker-compose down
+
+# 3️⃣ Stop Orchestrator
+cd /path/to/FrankStack/frank-spring
+docker-compose down
+```
+
+### 💡 Notes
+
+* AWS Payment Service requires LocalStack for Lambda registrations
+* All services communicate correctly after startup
+
+---
+
 # 📅 Update 23 October 2025 — Released Docker Compose for AWS Payment Service 🎃
 
 ## ⚙️ Summary
