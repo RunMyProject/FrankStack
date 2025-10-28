@@ -17,7 +17,7 @@ package com.frankspring.frankkafkatravelconsumer.listener;
  * - BookingEntry is now stored in SagaContext for state tracking.
  *     
  * Author: Edoardo Sabatini
- * Date: 07 October 2025
+ * Date: 28 October 2025
  */
 
 import com.frankspring.frankkafkatravelconsumer.models.*;
@@ -85,7 +85,7 @@ public class FrankKafkaListener {
      * @param bookingResponse The response object to populate
      * @param bookingMessage  The original booking message from Kafka
      */
-    private void performDirtyWork(BookingResponse bookingResponse, BookingMessage bookingMessage) {
+    private void performDirtyWork(BookingResponse bookingResponse, BookingMessage bookingMessage) throws Exception {
         BookingContext context = bookingMessage.getBookingContext();
         if (context == null || context.getFillForm() == null) {
             System.out.println("⚠️ [DIRTY WORK] Missing booking context or form.");
@@ -93,7 +93,7 @@ public class FrankKafkaListener {
         }
 
         FillForm form = context.getFillForm();
-        String travelMode = form.getTravelMode();
+        String travelMode = form.getTravelMode().toLowerCase();
 
         System.out.println("🛠️ [DIRTY WORK] Detected travel mode: " + travelMode);
 
@@ -105,7 +105,10 @@ public class FrankKafkaListener {
             case "bus" -> results.setBuses(ResultsContext.getBuses());
             case "car" -> results.setCars(ResultsContext.getCars());
             case "space", "spaceship", "rocket" -> results.setSpaces(ResultsContext.getSpaces());
-            default -> System.out.println("❓ [DIRTY WORK] Unknown travel mode: " + travelMode);
+            default -> {
+                System.out.println("❓ [DIRTY WORK] Unknown travel mode: " + travelMode);
+                throw new Exception("Unknown travel mode: " + travelMode);
+            }
         }
 
         bookingResponse.setResults(results);
