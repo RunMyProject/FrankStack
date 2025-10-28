@@ -1,0 +1,9 @@
+{
+  "Records": [
+    {
+      "Sns": {
+        "Message": "{\"sagaCorrelationId\":\"test-saga-123\",\"status\":\"CREATED\",\"context\":{\"total\":\"100.00\"}}"
+      }
+    }
+  ]
+}

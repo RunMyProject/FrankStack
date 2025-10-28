@@ -8,7 +8,7 @@ package com.frankaws.lambda.payment.card.consumer.models;
  * as well as the total amount to be charged.
  * 
  * Author: Edoardo Sabatini
- * Date: 15 October 2025
+ * Date: 28 October 2025
  */
 
 import lombok.AllArgsConstructor;
@@ -25,4 +25,7 @@ public class PaymentContext {
     private String travelId;   // Reference to a travel booking (if any)
     private String hotelId;    // Reference to a hotel booking (if any)
     private BigDecimal total;  // Amount to be charged
+    private String currency;   // Currency code (EUR, USD, etc.)
+    private String cardHolder;   // 👈 CAMPO MANCANTE - Nome del titolare della carta
+    private String invoiceNumber; // 👈 AGGIUNGI QUESTO CAMPO
 }

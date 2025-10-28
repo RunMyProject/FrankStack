@@ -35,7 +35,7 @@ package com.frankaws.lambda.payment.card.consumer.lambda;
  * *************************************************************************
  *
  * Author: Edoardo Sabatini
- * Date: 23 October 2025
+ * Date: 28 October 2025
  */
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -44,12 +44,14 @@ import com.amazonaws.services.lambda.runtime.events.SNSEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import com.frankaws.lambda.payment.card.consumer.models.PaymentCardMessage;
-import com.frankaws.lambda.payment.card.consumer.models.PaymentSagaStatus; 
+import com.frankaws.lambda.payment.card.consumer.models.PaymentSagaStatus;
+
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URI; 
+import java.net.URI;
 
 // The method returns Void. Failure is signaled by throwing a RuntimeException, 
 // which triggers the AWS retry/DLQ mechanism for asynchronous invocation (SNS).
@@ -73,18 +75,48 @@ public class PaymentCardLambda implements RequestHandler<SNSEvent, Void> {
             String jsonMessage = record.getSNS().getMessage();
             context.getLogger().log("Received JSON: " + jsonMessage);
 
+            String invoiceUrl = null;
+            String logMessage = null;
+
             try {
-                PaymentCardMessage messageObject = objectMapper.readValue(jsonMessage, PaymentCardMessage.class);
+                // Read the JSON into a JsonNode first
+                JsonNode jsonNode = (JsonNode)objectMapper.readTree(jsonMessage);
+                PaymentCardMessage messageObject = objectMapper.treeToValue(jsonNode, PaymentCardMessage.class);
+
+                // Se lo status è PENDING, convertilo a CREATED
+                if (messageObject.getStatus() == null) {
+                    String statusStr = jsonNode.get("status").asText();
+                    if ("PENDING".equals(statusStr)) {
+                        messageObject.setStatus(PaymentSagaStatus.CREATED);
+                    }
+                }
                 
+                // Generate invoice and get public URL
+                System.out.println("🔄 Creating S3 invoice generator...");
+                PaymentCardS3Invoice invoiceGenerator = new PaymentCardS3Invoice();
+                System.out.println("🚀 Generating S3 invoice...");
+                invoiceUrl = invoiceGenerator.generate(jsonMessage);
+                
+                if (invoiceUrl != null) {
+                    System.out.println("✅ S3 Invoice URL: " + invoiceUrl);
+                    context.getLogger().log("📄 Invoice URL: " + invoiceUrl);
+                    logMessage += " | Invoice URL: " + invoiceUrl;
+                    messageObject.setInvoiceUrl(invoiceUrl);
+                } else {
+                    System.out.println("❌ S3 Invoice generation returned null");
+                    logMessage += " | Invoice URL: null";
+                }
+
                 // 1. SAGA State Transition: PROCESSING (Pre-call state)
                 messageObject.setStatus(PaymentSagaStatus.PROCESSING);
                 
-                String logMessage = String.format(
-                        "Callback address: %s | Processing SAGA ID: %s | Status: %s | Total amount: %s" ,
+                logMessage = String.format(
+                        "Callback address: %s | Processing SAGA ID: %s | Status: %s | Total amount: %s  | Invoice URL: %s",
                         url,
                         messageObject.getSagaCorrelationId(),
                         messageObject.getStatus(),
                         messageObject.getContext() != null ? messageObject.getContext().getTotal() : "N/A"
+                        , invoiceUrl
                 );
 
                 System.out.println("☕ " + logMessage);
@@ -107,6 +139,11 @@ public class PaymentCardLambda implements RequestHandler<SNSEvent, Void> {
                 }
 
             } catch (Exception e) {
+                System.err.println("💥 S3 Invoice failed with exception: " + e.getMessage());
+                e.printStackTrace();
+                context.getLogger().log("⚠️ S3 Invoice generation failed: " + e.getMessage());
+                logMessage += " | Invoice URL: null";
+
                 context.getLogger().log("❌ Critical Error processing message: " + e.getMessage());
                 e.printStackTrace(System.err);
                 // Re-throw exception to signal definite failure to AWS runtime

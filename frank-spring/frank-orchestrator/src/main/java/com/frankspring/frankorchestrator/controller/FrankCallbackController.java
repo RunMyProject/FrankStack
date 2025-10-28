@@ -7,7 +7,7 @@ package com.frankspring.frankorchestrator.controller;
  * as part of the SAGA orchestration flow.
  *
  * Author: Edoardo Sabatini
- * Date: 17 October 2025
+ * Date: 28 October 2025
  */
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +66,19 @@ public class FrankCallbackController {
         // NB:
         // next step: map this to application.yml
         //
-        String invoiceUrl = "http://localhost:4566/my-bucket/" + invoiceKey;
+        // String invoiceUrl = "http://localhost:4566/my-bucket/" + invoiceKey;
+
+        // Get invoiceUrl from Lambda payload
+        String invoiceUrl = (String) payload.get("invoiceUrl");
+        
+        if (invoiceUrl == null || invoiceUrl.isEmpty()) {
+            System.err.println("⚠️ WARNING: invoiceUrl not received from Lambda");
+            // Fallback URL
+            invoiceUrl = "http://localhost:4566/frank-aws-invoices/invoices/" + sagaCorrelationId + "/invoice.pdf";
+            System.out.println("📄 Using fallback URL: " + invoiceUrl);
+        } else {
+            System.out.println("📄 Invoice URL from Lambda: " + invoiceUrl);
+        }
 
         emitPayload.put("invoiceUrl", invoiceUrl);        
         emitPayload.put("message", "Payment completed successfully");

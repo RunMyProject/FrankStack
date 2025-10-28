@@ -13,7 +13,7 @@ package com.frankaws.lambda.payment.card.consumer.models;
  * - Includes current saga/payment status (PaymentSagaStatus)
  * 
  * Author: Edoardo Sabatini
- * Date: 15 October 2025
+ * Date: 28 October 2025
  */
 
 import lombok.AllArgsConstructor;
@@ -32,4 +32,5 @@ public class PaymentCardMessage {
     @Builder.Default
     private PaymentSagaStatus status = PaymentSagaStatus.CREATED; // Current payment status
     private PaymentContext context;       // Optional payment context (total, references)
+    private String invoiceUrl;            // URL of the generated invoice in S3
 }

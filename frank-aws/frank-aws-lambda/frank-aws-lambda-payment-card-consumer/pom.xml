@@ -17,7 +17,7 @@
     • Focused on “cardpayment” SNS/SQS message publishing
 
     Author: Edoardo Sabatini
-    Date: 16 October 2025
+    Date: 28 October 2025
 -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" 
@@ -47,6 +47,20 @@
     </properties>
 
     <dependencies>
+
+        <dependency>
+            <groupId>com.itextpdf</groupId>
+            <artifactId>itext7-core</artifactId>
+            <version>7.2.5</version>
+            <type>pom</type>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/com.amazonaws/aws-java-sdk-s3 -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.12.792</version>
+        </dependency>
 
 		<!-- CallbackConfig 
         <dependency>

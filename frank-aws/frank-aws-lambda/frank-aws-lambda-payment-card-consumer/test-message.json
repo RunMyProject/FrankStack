@@ -1,0 +1,8 @@
+{
+  "sagaCorrelationId": "test-saga-123",
+  "status": "PENDING",
+  "context": {
+    "total": "100.00",
+    "currency": "EUR"
+  }
+}
