@@ -1,5 +1,21 @@
 # FrankStack
 
+## 📅 Update 28 October 2025 — Simplified Deployment with Root-Level Scripts 🎃🎃🎃
+
+### 🎯 One-Command Deployment
+
+We consolidated the entire deployment process into two simple scripts that run from the project root. After cloning the repository, deploy the entire stack with a single command.
+
+### 📋 Getting Started
+
+```bash
+cd FrankStack
+./deployFrankStack.sh    # Start entire stack
+./undeployFrankStack.sh  # Stop entire stack
+```
+
+---
+
 ## 📅 Update 27 October 2025 — Consolidated Docker & Node/Stripe Services 🎃🎃
 
 ### ⚙️ Summary
