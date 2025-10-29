@@ -12,8 +12,10 @@
 # - Logging to file for audit trail
 #
 # Author: Edoardo Sabatini
-# Date: 27 October 2025
+# Date: 29 October 2025
 # ==========================================================
+
+export AWS_PAGER=""
 
 set -e
 
@@ -252,3 +254,7 @@ log_message "✅ DOCKER DEPLOYMENT COMPLETE - $JAR_COUNT functions deployed"
 log_message "======================================================"
 
 log_message "📄 Log saved to: $LOG_FILE"
+echo ""
+# ================================================================
+# End of deploy-lambda-docker.sh
+# ================================================================

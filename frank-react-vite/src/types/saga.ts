@@ -21,7 +21,7 @@
  * -----------------------
  *
  * Author: Edoardo Sabatini
- * Date: 10 October 2025
+ * Date: 29 October 2025
  *
  */
 
@@ -131,4 +131,5 @@ export interface SagaStep {
   status: StepStatus;
   bookingEntry: BookingEntry | HotelBookingEntry;
   errorMessage?: string;
+  invoiceUrl?: string; // URL to the invoice for this payment method
 }

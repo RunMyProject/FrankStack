@@ -7,7 +7,7 @@
  * and manages the booking process state including payment processing.
  * 
  * AUTHOR: Edoardo Sabatini
- * DATE: 17 October 2025
+ * DATE: 29 October 2025
  */
 
 import type { AIContext, ProcessResult } from '../types/chat';
@@ -557,16 +557,28 @@ export class BookingManager {
           console.log('timestamp:', timestamp);
 
           // Update payment step to completed
-          this.steps = this.steps.map(step => {
+          this.steps = this.steps.map((step): SagaStep => {
+
+            if (step === undefined) {
+              return { 
+                       id: 'service-d', 
+                       status: 'completed', 
+                       description: '✅ Payment processed successfully', 
+                       invoiceUrl: '', 
+                       bookingEntry: {} as BookingEntry 
+                     } as SagaStep;
+            }
+
             if (step.id === 'service-d') {
               return {
                 ...step,
                 status: 'completed',
-                description: '✅ Payment processed successfully'
+                description: '✅ Payment processed successfully',
+                invoiceUrl: invoiceUrl // attach invoice URL to step
               };
             }
             return step;
-          });
+          }) as SagaStep[];
 
           this.callbacks.onStepUpdate([...this.steps]);
 

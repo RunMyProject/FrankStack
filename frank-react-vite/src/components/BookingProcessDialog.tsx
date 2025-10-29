@@ -33,7 +33,7 @@
  * Uses BookingManager for backend communication and displays the booking process.
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 10 October 2025
+ * DATE: 29 October 2025
  */
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -284,11 +284,17 @@ const BookingProcessDialog: React.FC<{
           <button
             onClick={onClose}
             disabled={isProcessing || isConfirming}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+            className={`px-6 py-2 rounded-lg font-medium transition-all ${
+              hasCompleted 
+                ? 'bg-green-600 text-white hover:bg-green-700' 
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
           >
-            Cancel
+            {hasCompleted ? '✓ Close' : 'Cancel'}
           </button>
         </div>
+        {/* End Footer */}
+        
       </div>
     </div>
   );

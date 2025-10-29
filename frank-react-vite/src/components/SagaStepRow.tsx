@@ -7,7 +7,7 @@
  * Bilingual labels (Italian / English) and Tailwind-based styling.
  *
  * AUTHOR: Edoardo Sabatini
- * DATE: 10 October 2025
+ * DATE: 29 October 2025
  */
 
 import React from 'react';
@@ -171,6 +171,45 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
     );
   };
 
+  // Render invoice download link if available
+  const renderInvoiceDownload = () => {
+    if (step.status !== 'completed' || step.id !== 'service-d' || !step.invoiceUrl) {
+      return null;
+    }
+
+    const handleOpenPdf = () => {
+      if (step.invoiceUrl) {
+        window.open(step.invoiceUrl, '_blank', 'noopener,noreferrer');
+      }
+    };
+
+    return (
+      <div className="mt-3 p-3 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-2xl">📄</span>
+              <div>
+                <p className="text-sm font-semibold text-gray-800">Invoice Ready</p>
+                <p className="text-xs text-gray-600">Your payment receipt is available</p>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleOpenPdf}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all transform hover:scale-105"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download PDF
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Main component return
   return (
     <div className={`mb-3 p-3 rounded-lg border-2 transition-all ${getStatusColor()}`}>
       <div className="flex items-start gap-3">
@@ -215,7 +254,8 @@ const SagaStepRow: React.FC<SagaStepRowProps> = ({
               ) : null}
             </>
           )}
-          {renderBookingDetails()}
+          {renderBookingDetails()}          
+          {renderInvoiceDownload()}
         </div>
       </div>
     </div>
