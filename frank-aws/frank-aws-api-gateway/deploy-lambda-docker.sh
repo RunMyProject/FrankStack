@@ -15,6 +15,34 @@
 # Date: 29 October 2025
 # ==========================================================
 
+# -------------------------------------------------------
+# WAIT FOR LOCALSTACK TO BE READY
+# -------------------------------------------------------
+wait_for_localstack() {
+    local max_attempts=30
+    local attempt=1
+    local wait_seconds=2
+    
+    log_message "⏳ Waiting for LocalStack to be ready..."
+    
+    while [ $attempt -le $max_attempts ]; do
+        if aws --endpoint-url=$ENDPOINT sts get-caller-identity --region $REGION >/dev/null 2>&1; then
+            log_message "✅ LocalStack is ready and responsive"
+            return 0
+        fi
+        
+        log_message "⌚ Attempt $attempt/$max_attempts - LocalStack not ready yet, waiting ${wait_seconds}s..."
+        sleep $wait_seconds
+        attempt=$((attempt + 1))
+    done
+    
+    exit_on_error "LocalStack failed to become ready after $max_attempts attempts"
+}
+
+# Invoke the wait function
+wait_for_localstack
+
+# Disable AWS CLI pager globally
 export AWS_PAGER=""
 
 set -e
