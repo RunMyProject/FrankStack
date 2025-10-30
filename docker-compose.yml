@@ -7,10 +7,13 @@
 # variable-substitution pitfalls with Docker Compose.
 #
 # Author: Edoardo Sabatini
-# Date: 27 October 2025
+# Date: 30 October 2025
 # ================================================================
 
 version: '3.9'
+
+volumes:
+  nvidia-data:
 
 services:
 
@@ -18,6 +21,17 @@ services:
   # AI CORE - ACTIVE SERVICE
   # ------------------------------------------------------------------------------------
   
+  # NOTES:
+  # -------------------------------------------------------------------------------
+  # sudo apt-get update
+  # sudo apt-get install -y nvidia-container-toolkit
+  # sudo systemctl restart docker
+  # sudo nvidia-ctk runtime configure --runtime=docker
+  # sudo systemctl restart docker
+  # docker info | grep -i runtimes
+  # docker run --rm --gpus all nvidia/cuda:12.4.0-runtime-ubuntu22.04 nvidia-smi
+  # -------------------------------------------------------------------------------
+
   # ------------------------------------------------------------------------------
   # 1. FrankStack Ollama Server (LLM Core) - ACTIVE
   # ------------------------------------------------------------------------------
@@ -36,6 +50,13 @@ services:
     networks:
       - frankstack-ai-net
     restart: always
+    deploy:
+          resources:
+            reservations:
+              devices:
+                - driver: nvidia
+                  count: all
+                  capabilities: [gpu]
 
   # ------------------------------------------------------------------------------
   # 2. FrankStack Node.js Server (AI Logic / Proxy / BFF)
@@ -103,6 +124,18 @@ services:
     networks:
       - frankstack-ai-net
     restart: unless-stopped
+
+  frankstack-nvidia:
+    image: nvidia/cuda:12.4.0-runtime-ubuntu22.04
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    volumes:
+      - nvidia-data:/usr/local/cuda
+
 
 # ------------------------------------------------------------------------------------
 # NETWORK CONFIGURATION
