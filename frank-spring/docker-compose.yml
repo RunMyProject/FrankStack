@@ -4,7 +4,7 @@
 # Optimized: using .env file for configuration
 # 
 # Author: Edoardo Sabatini
-# Date: 27 October 2025
+# Date: 03 November 2025
 # ================================================================
 
 version: '3.9'
@@ -24,9 +24,12 @@ services:
       - frankstack-kafka
     ports:
       - "${ORCHESTRATOR_PORT}:8080"
+    # Load environment variables (model paths, ports, etc.)
+    env_file:
+      - .env
+      - .env.auto
     environment:
       - SPRING_PROFILES_ACTIVE=${ORCHESTRATOR_PROFILE}
-      - AWS_PAYMENT_SERVICE_URL=${AWS_PAYMENT_SERVICE_URL}
     volumes:
       - maven-repo:/root/.m2
     networks:

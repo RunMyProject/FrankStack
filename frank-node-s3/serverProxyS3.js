@@ -14,9 +14,8 @@ const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3007;
-
-// Base URL of your LocalStack S3 bucket (adjust if needed)
-const LOCALSTACK_BASE = 'http://172.17.0.1:4566/frank-aws-invoices/invoices';
+// Base URL of your LocalStack S3 bucket
+const LOCALSTACK_BASE = process.env.LOCALSTACK_BASE;
 
 app.use(cors());
 

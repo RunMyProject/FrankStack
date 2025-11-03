@@ -29,8 +29,8 @@ COPY . .
 # 3️⃣ Environment configuration - Use environment variables from .env only
 # ------------------------------------------------
 ENV NODE_ENV=${NODE_ENV} \
-    PORT=${S3_SERVER_PORT}
-    
+    PORT=${S3_SERVER_PORT} \
+    LOCALSTACK_BASE=${LOCALSTACK_BASE}
 # ------------------------------------------------
 # 4️⃣ Expose port (from .env)
 EXPOSE ${S3_SERVER_PORT}

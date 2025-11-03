@@ -56,5 +56,13 @@ else
     exit 1
 fi
 
+# ==========================================================
+# Final cleanup
+# Docker remove dangling images, unused volumes, and networks
+echo "-------------------------------------------"
+echo "Stage 5: Final cleanup..."
+cd ..
+./deadClean.sh
+
 echo "Undeployment script finished."
 # End of undeployFrankStack.sh

@@ -12,7 +12,7 @@
 # - Logging to file for audit trail
 #
 # Author: Edoardo Sabatini
-# Date: 29 October 2025
+# Date: 03 November 2025
 # ==========================================================
 
 # -------------------------------------------------------
@@ -58,6 +58,19 @@ if [ -f "$ENV_FILE" ]; then
     set +a
 else
     echo "⚠️  Warning: $ENV_FILE not found, using defaults"  > env_error.txt
+fi
+
+# -------------------------------------------------------
+# LOAD AUTO ENVIRONMENT VARIABLES
+# -------------------------------------------------------
+ENV_AUTO_FILE=".env.auto"
+
+if [ -f "$ENV_AUTO_FILE" ]; then
+    set -a  # automatically export all variables
+    . "$ENV_AUTO_FILE"
+    set +a
+else
+    echo "⚠️  Warning: $ENV_AUTO_FILE not found, using defaults"  > env_error.txt
 fi
 
 
@@ -153,7 +166,7 @@ deploy_lambda() {
     if [[ "$lambda_name" == *"producer"* ]]; then
         env_vars="Variables={SNS_TOPIC_ARN=$TOPIC_ARN,AWS_ENDPOINT_URL=$LOCALSTACK_INTERNAL_ENDPOINT}"
     elif [[ "$lambda_name" == *"consumer"* ]]; then
-        env_vars="Variables={ORCHESTRATOR_WEBHOOK_URL=$ORCHESTRATOR_WEBHOOK_URL}"
+        env_vars="Variables={ORCHESTRATOR_WEBHOOK_URL=$ORCHESTRATOR_WEBHOOK_URL,S3_ENDPOINT_URL=$S3_ENDPOINT_URL}"
     fi
     
     aws --endpoint-url=$ENDPOINT lambda create-function \

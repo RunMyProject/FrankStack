@@ -11,7 +11,7 @@ package com.frankaws.lambda.payment.card.consumer.lambda;
  * *************************************************************************
  *
  * Author: Edoardo Sabatini
- * Date: 28 October 2025
+ * Date: 03 November 2025
  */
 
 import com.amazonaws.services.s3.AmazonS3;
@@ -32,9 +32,7 @@ public class PaymentCardS3Invoice {
     // Configuration from environment variables
     private static final String S3_BUCKET_NAME = System.getenv("S3_BUCKET_NAME") != null ? System.getenv("S3_BUCKET_NAME") : "frank-aws-invoices";
     private static final String AWS_REGION = System.getenv("AWS_REGION") != null ? System.getenv("AWS_REGION") : "eu-central-1";
-    // private static final String S3_ENDPOINT = System.getenv("S3_ENDPOINT_URL") != null ? System.getenv("S3_ENDPOINT_URL") : "http://host.docker.internal:4566";
-    // private static final String S3_ENDPOINT = "http://10.79.98.63:4566";
-    private static final String S3_ENDPOINT = System.getenv("S3_ENDPOINT_URL") != null ? System.getenv("S3_ENDPOINT_URL") : "http://172.17.0.1:4566";
+    private static final String S3_ENDPOINT = System.getenv("S3_ENDPOINT_URL") != null ? System.getenv("S3_ENDPOINT_URL") : "http://127.0.0.1:4566";
     
     // Invoice configuration
     private static final String INVOICE_PREFIX = "invoices";

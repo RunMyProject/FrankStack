@@ -16,8 +16,15 @@
 # - Keep repository clean from runtime, build, and IDE files
 #
 # Author: Edoardo Sabatini
-# Date: 14 October 2025
+# Date: 03 November 2025
 #############################
+
+# ------------------------
+# Environment files
+# ------------------------
+.env.auto
+# .env.local
+
 # ------------------------
 # Logs
 # ------------------------
@@ -61,11 +68,6 @@ web_modules/
 !.yarn/sdks
 !.yarn/versions
 .yarn-integrity
-
-# dotenv
-.env
-.env.*
-!.env.example
 
 # Vite / React / JS build output
 .cache

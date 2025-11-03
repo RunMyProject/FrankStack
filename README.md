@@ -1,658 +1,154 @@
 # FrankStack
 
-## 📅 Update 28 October 2025 — Simplified Deployment with Root-Level Scripts 🎃🎃🎃
+**An AI-powered travel booking orchestration platform built on Microservices and AWS cloud-native infrastructure.**
 
-### 🎯 One-Command Deployment
+---
 
-We consolidated the entire deployment process into two simple scripts that run from the project root. After cloning the repository, deploy the entire stack with a single command.
+## 🚀 Getting Started
 
-### 📋 Getting Started
+### Prerequisites
+
+Ensure all environment variables are properly configured before deployment.
+
+#### Environment Configuration
+
+1. Clone the repository and navigate to the project directory:
+
+```bash
+git clone https://github.com/RunMyProject/FrankStack.git
+cd FrankStack/
+nano .env.local
+```
+
+2. Configure the following required variables:
+
+```bash
+HOST_MODELS_DIR=/media/edoardo/data/ollama_models
+OLLAMA_MODEL=gemma2:9b-instruct-q4_0
+```
+
+> **Note:** This project has been tested with Gemma 2 (9B parameters, Q4_0 quantization) for efficient inference on instruction-following tasks. You may select any compatible model that suits your requirements.
+
+---
+
+### Deployment
+
+#### Starting the Platform
 
 ```bash
 cd FrankStack
-./deployFrankStack.sh    # Start entire stack
-./undeployFrankStack.sh  # Stop entire stack
+./deployFrankStack.sh
+```
+
+#### Post-Deployment Verification
+
+1. **Verify AI Model Loading**
+
+   Wait for the deployment to complete, then confirm all AI models are properly loaded:
+
+   ```bash
+   ./modelsList.sh
+   ```
+   
+   Press `Ctrl+C` to exit the log stream.
+
+2. **Check AWS Infrastructure**
+
+   Verify that AWS SNS/SQS topics are provisioned and ready:
+
+   ```bash
+   ./show-topic.sh
+   ```
+
+3. **Access the Application**
+
+   Once all services are operational, access the platform via the NGINX ingress controller:
+
+   ```
+   http://localhost
+   ```
+
+---
+
+### Shutdown
+
+To gracefully stop all services:
+
+```bash
+./undeployFrankStack.sh
 ```
 
 ---
 
-## 📅 Update 27 October 2025 — Consolidated Docker & Node/Stripe Services 🎃🎃
+## 📚 Documentation
 
-### ⚙️ Summary
+For comprehensive documentation and historical release notes, refer to:
 
-Today we finalized the Docker Compose setup for the full FrankStack system, including:
+- [README_august_october.md](./README_august_october.md)
 
-* Orchestrator (Spring Boot services)
-* Node server services (API + Stripe + AI/Webhooks)
-* React frontend
-* AWS Payment Service (LocalStack, Lambda registration, etc.)
+---
 
-### 🧩 Project Structure
+## 🏗️ Architecture Overview
+
+> **Release Candidate (RC1) — Stable milestone ready for controlled testing and production-like validation.**
+
+---
+
+## 💡 Design & Architecture
+
+FrankStack was designed with a clear principle in mind: **orchestration over chaos**.
+The project reflects a pragmatic **software architect mindset**, balancing modular design with operational simplicity.
+
+**Key points:**
+- **Separation of Concerns:** services with single responsibilities for better scalability and testability.
+- **Event-Driven Integration:** Kafka + AWS SNS/SQS for resilient, asynchronous workflows.
+- **AI-First Approach:** local inference (Ollama) and provider-agnostic Node.js bridging.
+- **Reactive UX:** React + Vite with SSE/WebSockets for realtime user feedback.
+- **Cloud-Native Simplicity:** reproducible deployments via Docker Compose and deployment scripts.
+
+### Project Structure
 
 ```
 FrankStack/
-├─ frank-aws/
-├─ frank-node-server/
-├─ frank-node-stripe/
-├─ frank-react-vite/
-├─ frank-spring/
-├─ .env
-├─ docker-compose.yml
+├── 📁 frank-spring/                    # Spring Boot microservices
+│   ├── frank-api-gateway/              # API Gateway service
+│   ├── frank-orchestrator/             # Orchestration service
+│   └── frank-kafka/                    # Kafka event streaming
+│       ├── frank-kafka-hotel-consumer/
+│       ├── frank-kafka-hotel-producer/
+│       ├── frank-kafka-travel-consumer/
+│       └── frank-kafka-travel-producer/
+├── 📁 frank-aws/                       # AWS-integrated services
+│   ├── frank-aws-api-gateway/          # AWS API Gateway
+│   ├── frank-aws-lambda/               # Lambda functions
+│   │   ├── frank-aws-lambda-payment-card-consumer/
+│   │   └── frank-aws-lambda-payment-card-producer/
+│   └── frank-aws-service/              # AWS service integrations
+├── 📁 frank-react-vite/                # Frontend (React + Vite)
+│                                       # SSE for Spring/Kafka streams
+│                                       # WebSocket (WS) for Node.js bidirectional communication
+├── 📁 frank-node-server/               # Node.js backend services
+│                                       # Connects to Ollama or AI providers (OpenAI, etc.)
+├── 📁 frank-node-stripe/               # Stripe payment integration
+├── 📁 frank-node-s3/                   # S3 storage service
+├── docker-compose.yml                  # Main orchestration
+└── deployFrankStack.sh                 # Deployment script
 ```
 
-Each module has its own `.env` file for customization (ports, keys, URLs, etc.).
+### Technology Stack
 
-### 🚀 Start the Stacks
-
-⚠️ **ORDER MATTERS!** Images are built automatically with `--build` flag.
-
-```bash
-# 1️⃣ Start the Orchestrator FIRST
-cd /path/to/FrankStack/frank-spring
-docker-compose up -d --build
-
-# 2️⃣ Start the main stack (React + Node services)
-cd /path/to/FrankStack
-docker-compose up -d --build
-
-# 3️⃣ Start the AWS Payment Service (registers Lambdas in LocalStack)
-cd /path/to/FrankStack/frank-aws
-./start-full-stack.sh
-```
-
-### 🛑 Stop the Stacks
-
-⚠️ **Use reverse order for graceful shutdown:**
-
-```bash
-# 1️⃣ Stop AWS Payment Service FIRST
-cd /path/to/FrankStack/frank-aws
-./stop-full-stack.sh
-
-# 2️⃣ Stop main stack
-cd /path/to/FrankStack
-docker-compose down
-
-# 3️⃣ Stop Orchestrator
-cd /path/to/FrankStack/frank-spring
-docker-compose down
-```
-
-### 💡 Notes
-
-* AWS Payment Service requires LocalStack for Lambda registrations
-* All services communicate correctly after startup
+- **AI/ML**: Ollama with Gemma 2 (9B, Q4_0) for intelligent inference
+- **Container Runtime**: Docker with NVDIA CUDA support for AI workloads
+- **Infrastructure**: Docker Compose, LocalStack, NGINX ingress
+- **Frontend**: React with Vite (NGINX-filtered ingress)
+- **Backend**: Spring Boot microservices, Node.js services
+- **Real-time Communication**: 
+  - WebSocket (WS) for bidirectional Node.js ↔ React streams
+  - Server-Sent Events (SSE) for unidirectional Spring/Kafka → React streams
+- **Event Streaming**: Apache Kafka (RedPanda), AWS SNS/SQS
+- **Storage**: AWS S3, Redis cache
+- **Payment Processing**: Stripe integration
 
 ---
 
-# 📅 Update 23 October 2025 — Released Docker Compose for AWS Payment Service 🎃
-
-## ⚙️ Summary
-
-Today, the **Docker Compose configuration** for the **AWS Payment Service** was released with full success!
-
-> **⚠️ IMPORTANT:** This is a complete and complex **enterprise application** — the typical **end-to-end (E2E) system** — so pay close attention to the configurations.
-
----
-
-## 🔧 Pre-Launch Configuration
-
-Before launching, you **MUST** edit two configuration files to match your machine IP:
-
-### 1️⃣ `docker-compose.yml`
-**Location:** `frank-aws/` (line 28)  
-**Set your:** `AWS_PAYMENT_SERVICE_URL`
-```yaml
-- AWS_PAYMENT_SERVICE_URL=http://172.17.0.1:18081/cardpayment/send  # line 28
-```
-
-### 2️⃣ `deploy-lambda-docker.sh`
-**Location:** `frank-aws/frank-aws-api-gateway/` (line 22)  
-**Set your:** `ORCHESTRATOR_WEBHOOK_URL`
-```bash
-ORCHESTRATOR_WEBHOOK_URL="http://172.17.0.1:8081/frankcallback/card-payment-complete"  # line 22
-```
-
-> **💡 Why?** These configurations are required because the batch script registers the AWS Lambda functions on your LocalStack instance. Running it ensures that your orchestrator can communicate with the payment service properly.
-
----
-
-## 🚀 Start the Stacks
-
-**⚠️ ORDER MATTERS!** Start in this exact sequence:
-```bash
-# 1️⃣ Start the Orchestrator FIRST
-cd /path/to/FrankStack/frank-spring
-docker-compose up -d --build
-
-# 2️⃣ Then start the AWS Payment Service (contains Lambda registrations)
-cd /path/to/FrankStack/frank-aws
-./start-full-stack.sh
-```
-
----
-
-## 🛑 Stop the Stacks
-
-**⚠️ REVERSE ORDER!** Stop in this exact sequence to ensure a *graceful shutdown*:
-```bash
-# 1️⃣ Stop AWS Payment Service FIRST
-cd /path/to/FrankStack/frank-aws
-./stop-full-stack.sh
-
-# 2️⃣ Stop Orchestrator completely
-cd /path/to/FrankStack/frank-spring
-docker-compose down
-```
-
----
-
-## 🍏 Golden Rule
-
-> **Always start the orchestrator BEFORE the AWS Payment Service and stop in REVERSE ORDER** to guarantee the Lambda functions are registered correctly and communication works end-to-end.
-
----
-
-*📅 Update 21 October 2025 — Docker Compose & Shell Adjustments*
-
-⚙️ **Summary:**
-Docker Compose added for the **first part** of the stack. Usage:
-
-```bash
-cd FrankStack/frank-spring
-docker-compose up -d --build
-```
-
-AWS and Node shells remain for now; Kafka shells can be removed.
-
----
-
-*📅 Update 17 October 2025 — Payment Saga Closed*
-
-⚙️ **Summary:**  
-Today marks the official closure of the **Payment Saga** in FrankStack.
-
-### Payment Saga Closed
-
-![SagaClosedPayment](screenshots/Saga_closed_payment_screen_2025_10_17.png)
-
-*Final screen showing that the payment saga has been successfully completed.*
-
-**Flow:**
-Once the user completes the booking and selects the card with the token from the **myStripe** server, React invokes the **orchestrator**, which calls the **payment service**. Inside, a **bridge** is triggered on an **AWS subnet** — Amazon Web Services. In this demo-prototype, we used **LocalStack** installed on an Ubuntu machine.  
-
-The call first passes through an **API-AWS-Gateway** dedicated to **payment processes**. Afterwards, a **wrapper** invokes an AWS Lambda registered for the **SNS topic**. Then, an **SQS queue** carries the payment message containing the **myStripe token** and the **Saga correlationID**.  
-
-The consumer Lambda, after the producer phase, accepts (or triggers) the message, registers the transaction in the database (to be implemented), and returns a link to the invoice stored in the **S3 bucket** (to be implemented).  
-
-At this point, the Lambda triggers a **webhook** to the orchestrator, which forwards the response as a **source event** to React, notifying that the payment has been successfully completed (current screen). An additional callback notifies the orchestrator of the invoice reception, closing the saga, freeing Hazelcast in-memory storage, and cleaning the SSE emission.
-
-## Payment Flow
-
-1. User completes booking & selects card with myStripe token
-2. React invokes Orchestrator
-3. Payment Service
-4. Bridge on AWS Subnet (LocalStack demo)
-5. API-AWS-Gateway for payment processes
-6. Wrapper invokes AWS Lambda (SNS topic)
-7. SQS queue: message with myStripe token + Saga correlationID
-8. Consumer Lambda accepts/triggers message
-9. Register transaction in DB (to be implemented)
-10. Return invoice link from S3 bucket (to be implemented)
-11. Lambda triggers webhook to Orchestrator
-12. Orchestrator forwards source event to React
-13. React notifies: payment completed ✅
-14. Callback: invoice received → Saga closed, Hazelcast cleared, SSE cleaned
-
----
-
-*📅 Update 10 October 2025 — Payment Integration (MyStripeServer)*
-
-⚙️ **Summary:**  
-Today’s focus was on setting up the **MyStripeServer** backend and integrating it with the **React frontend payment flow**.  
-This step marks the beginning of the **Payment Services module**, where the user can add, validate, and select payment methods (Visa / Mastercard / AMEX).
-The backend currently runs via a **Node.js/Express test server**, while the **Java + Saga Pattern integration** will be implemented next.
-
-**Frontend Progress:**
-- Implemented `PaymentOptionsCard.tsx` with live card detection and validation.
-- Added `UserEdoardoDB.ts` with predefined payment data (Edoardo + test users).
-- Created test scripts:
-  - `test_token.sh` → verifies token generation from the backend.
-  - `start.sh` → starts the local Node server.
-- Integrated mock payment API for token retrieval (`/getToken`).
-- Used test credit cards from PayPal reference (see below).
-
-🔗 **Testing resource:**  
-👉 [PayPal Test Credit Card Numbers](https://www.paypalobjects.com/en_GB/vhelp/paypalmanager_help/credit_card_numbers.htm)
-
-**Next Step:**
-- Implement backend in **Java (Spring Boot)** with **Saga Pattern** for reliable distributed payment orchestration.
-- Connect to Kafka and add transaction logging.
-- Replace mock tokens with secure JWT-based session handling.
-
-## Screenshots
-
-### 1. Add New Card
-![AddNewCard](screenshots/AddNewCard.png)
-*New card form with validation and dynamic card type detection.*
-
-### 2. Google Payments - Display
-![GooglePayments](screenshots/GooglePayments.png)
-*Shows third-party wallet integration readiness.*
-
-### 3. Payment Services - Waiting
-![PaymentServicesWaiting](screenshots/PaymentServicesWaiting.png)
-*Indicates payment data is being securely processed.*
-
----
-
-*📅 Update 8 October 2025 — Hotel Options Screen*
-
-⚠️ **Note:** this is a first working cycle; a few bugs may still be present.
-
-* **Reached:** user hotel selection interface displayed successfully.
-* **Context:** frontend view integrated with backend saga flow for hotel choice.
-
-## Screenshots
-
-### 1. Hotel Step - Selection
-![HotelStepSelection](screenshots/HotelStepSelection.png)
-*Displays available hotel options for the user to select from.*
-
-### 2. Hotel Step - Waiting
-![HotelStepWaiting](screenshots/HotelStepWaiting.png)
-*Indicates the system is processing the hotel selection.*
-
-### 3. Hotel Step - Booked
-![HotelStepBooked](screenshots/HotelStepBooked.png)
-*Shows the interface after a hotel has been successfully booked.*
-
----
-
-*📅 Update 7 October 2025 — Screenshots*
-
-* **Reached:** Saga completed up to **transport pre-booking** (pre-calculated BookingEntry — not paid).
-* **System:** proposes the **top 3** travel options for user refinement.
-* **Streaming:** unidirectional **SSE** (backend → frontend). User changes are POSTed to **Kafka** and processed by Spring microservices.
-
-**Screenshots:**
-
-![SagaTransportService](screenshots/SagaTransportService.png)
-
-![TransportBookingConfirmed](screenshots/TransportBookingConfirmed.png)
-
----
-
-*📅 Update 3 October 2025 — Sequential Call Table*
-
-## 🙏 Apologies for the delay, the project is very complex!
-
-| Step | Terminal / Shell              | Directory / Project                                    | Command                                                                          | Notes                                                                                 |
-| ---- | ----------------------------- | ------------------------------------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1️⃣  | Ollama + Gemma Model          | `frank-ops`                                            | `export OLLAMA_MODELS=/media/edoardo/data2/ollama_models/models && ollama serve` | Make sure `gemma2:9b-instruct-q4_0` is fully downloaded (registry, blobs, manifests). |
-| 2️⃣  | Node.js WebSocket AI Server   | `frank-node-server`                                    | `node ws_ai_server.js`                                                           | Node backend that handles communication between React and AI.                         |
-| 3️⃣  | Kafka + Redpanda              | `frank-ops`                                            | `./startkafka.sh`                                                                | Verify Docker images (`docker images`) before starting.                               |
-| 4️⃣  | Java + Spring API Gateway     | `frank-api-gateway`                                    | `mvn spring-boot:run`                                                            | Check Maven and Java versions (`mvn -v` and `java -version`).                         |
-| 5️⃣  | Java + Spring FrankOrchestrator | `frank-spring/frank-orchestrator`                     | `mvn spring-boot:run`                                                            | Orchestrates saga pattern, SSE, and external service calls.                            |
-| 6️⃣  | Java + Spring Travel Producer | `frank-spring/frank-kafka/frank-kafka-travel-producer` | `mvn spring-boot:run`                                                            | Produces Kafka events for the booking flow.                                           |
-| 7️⃣  | Java + Spring Travel Consumer | `frank-spring/frank-kafka/frank-kafka-travel-consumer` | `mvn spring-boot:run`                                                            | Consumes Kafka events, updates saga in Hazelcast, and sends SSE to front-end.         |
-| 8️⃣  | Front-End React / Vite        | `frank-react-vite`                                     | `npm install && npm run dev`                                                     | First time: install dependencies. Open browser at the URL provided by Vite. Say hi to FrankStack AI to test connections. Then try phrases like `"I want a business trip to Paris!"` to verify end-to-end pipeline. |
-
-### Operational Notes:
-
-- Open terminals in the listed order to avoid connection issues between services.
-- Keep at least 6 terminals open to cover all active components.
-- This order ensures Node.js, Spring API Gateway, and Ollama are ready before triggering Kafka and the booking saga.
-- Paths are relative to the root ~/Java/FrankStack/.
-- This table serves as a daily operational reminder to run the full AI + orchestration booking pipeline end-to-end.
-
----
-
-### FrankStack AI Quick Test Scenario
-
-### ⚡ Prerequisites
-- NVIDIA GPU with **8 GB VRAM** (if your machine allows)  
-- **CUDA drivers** installed locally
-
-### Step 1: Start Small
-
-Test your system with a simple input to verify connections:
-
-    "I want a business trip to Paris!"
-
-Then add details as separate inputs, for example:
-
-    "departure tomorrow, return next Monday,"
-
-### Step 2: Full Scenario (if machine can handle it)
-
-Execute the full request in one go:
-
-    "I want a business trip to Paris! Budget 1000€, 2 people, departure tomorrow, return next Monday, 2 suitcases, travel by train, 4-star hotel."
-
-> Tip: Start small to ensure the AI responds without timeouts, then use the full scenario if your system is powerful enough.
-
----
-
-**Expected Behavior:**  
-
-- SSE streaming shows real-time updates of saga execution  
-- Booking context stored in Hazelcast and retrieved correctly  
-- Node.js server communicates with Ollama AI backend  
-- React front-end receives structured JSON response  
-- AI returns a complete travel plan matching user request
-
----
-
-*Updated: 30 September 2025*
-
----
-
-## 👋 Greetings & Apology
-
-First of all, apologies to all HRs and colleagues for the delay in updates. I was unwell and had to deal with some personal health issues.
-
-**Greetings of this evening and happy Autumn (Fall)! 🍂**
-
----
-
-## 🏁 Milestone Epilogue
-
-Today marks a significant milestone in the **FrankStack journey**. After starting the Gemma AI integration with Ollama, we have begun implementing the **backend booking process** in Spring Boot. The journey is just beginning, and we are embarking on a **very ambitious and long path** toward a full end-to-end travel AI assistant.
-
----
-
-## ✨ Recent Additions
-
-- **Hazelcast storage**: in-memory data storage for saga management
-- **CORS configuration** for **WebFlux Reactive** applications
-- **API Gateway**: routes requests to microservices efficiently
-- **Server-Sent Events (SSE)**: implemented for **two-phase saga pattern**
-  - Step 1: `POST` to create saga and store context in Hazelcast
-  - Step 2: `GET /stream` retrieves JSON results from in-memory DB
-- ✅ Note: Redis was **not used** to reduce memory footprint and avoid heavy configuration
-- Project currently expects **at least 8 shells open**:
-  1. Ollama
-  2. Node.js server
-  3. React/Vite client
-  4. API Gateway
-  5. Orchestrator SSE microservice
-  6. Kubernetes / Kafka
-  7. Search & Booking microservice
-  8. Payment microservice
-
-> This is the **current structure**, which may evolve during development. 🙏
-
----
-
-## 🛠 Instructions for Developers
-
-1. Start **Frank API Gateway**: `frank-spring/frank-api-gateway`
-2. Start **Frank Orchestrator**: `frank-spring/frank-orchestrator`
-3. Launch **Ollama**, setting environment variables for external models
-4. Start **Frank Node Server**
-5. Start **Frank React Vite Client**
-
-**Notes:**
-- Works on NVIDIA 2070 with 8 GB GPU, but can be tight
-- CUDA must be configured locally; otherwise CPU overload may occur
-- VLLM and llama.cpp are avoided due to library conflicts on my Ubuntu
-- Full test scenario example:
-  `"I want a business trip to Paris! Budget 1000, 2 people, departure tomorrow morning, return next Monday, 2 suitcases, travel by train, 4-star hotel."`
-- Configured for **Gemma 9B model**; may hit overhead or timeout if GPU/RAM is limited. Start with simple phrases like `"Hi!"` or `"I want to go to Paris!"`
-
----
-
-*Updated: 6 September 2025*
-
-## 🎉 Today's Progress (short)
-
-After countless trials, frustrations, and testing multiple models on an 8 GB CUDA VRAM laptop, we finally reached a **stable version** of the AI interaction pipeline.
-
-* AI snapshot validation & form completeness checks implemented
-* Structured printing of all travel form fields
-* Integration of Italian-language test scenario for end-to-end verification
-* Consistent behavior across multiple test runs
-
----
-
-### 📋 Booking Process Demo (Italian scenario)
-
-**User question (Italian, for demo purposes):**
-`Voglio fare un viaggio per Parigi! Budget 1000, siamo in 2 persone. Partenza domani mattina, ritorno lunedì prossimo. Valigie 2. Mezzo di trasporto: treno. Pernottamento in hotel a 4 stelle. 😊`
-
-**AI response:**
-`Processo di prenotazione avviato, attendere prego...`
-
-**📋 Travel Data:**
-
-```
-- Departure: Cinisello Balsamo
-- Destination: Parigi
-- Departure Date: Sun Sep 7 2025 00:00
-- Return Date: Wed Sep 10 2025 00:00
-- Duration of Stay (days): 3
-- Travel Mode: treno
-- Budget: 1000
-- People: 2
-- Hotel Stars: 4
-- Luggages: 2
-```
-
-**Screenshot reference:**  
-![Booking process started](screenshots/Booking_process_started_06_09_2025.png)
-
-### 📦 Available Models (8 GB VRAM CUDA)
-
-```
-gemma2:9b-instruct-q4_0                   5.4 GB  
-phi4-mini-reasoning:latest                3.2 GB  
-llama3.2:1b                               1.3 GB  
-qwen2.5:3b                                1.9 GB  
-mistral:7b-instruct-v0.2-q4_0             4.1 GB  
-adrienbrault/nous-hermes2pro:Q4_0-json    4.1 GB  
-gpt-oss:20b                               13 GB  
-```
-
-**Screenshot reference:**
-
-![Ollama model list](screenshots/ollama_list%202025-09-06%2022-40-40.png)
-
----
-
-*Updated: 29 August 2025*
-
----
-
-## 🎉 Today's Progress (short)
-
-We made focused progress today:
-
-- Automatic browser-based location detection (GPS).
-- Weather integration tied to detected location.
-- Session persistence with **Zustand** (stores user session + AI context).
-- Built and tested a structured JSON model for AI interactions; parsing pipeline validated.
-- Many iterative tests and fixes on the AI prompt / response flow.
-
----
-
-## 📸 Screenshots & Demo (first impression)
-
-Take a quick look at the AI in action. Edoardo asks the assistant for a trip to Paris — question on the left, AI answer on the right.
-
-| Question | Answer |
-|----------|--------|
-| ![Question](screenshots/Question%202025-08-29%2023-02-31.png) | ![Answer](screenshots/Answer%202025-08-29%2023-03-12.png) |
-
-> **User sample:** `Hi! I'd like to take a trip to Paris! 😊`
-> **Assistant (sample):** `Sure Edoardo, could you please let me know ...` (requesting missing fields)
-
----
-
-## Welcome
-
-**FrankStack** takes inspiration from *Frankenstein*: the monster built from multiple parts becomes a metaphor for a **fullstack project** that integrates all layers of development, from front-end to DevOps. The name also symbolizes the ambition of the project: creating an **end-to-end AI travel agent**, complete, modular, and orchestrated, like a multi-component robot that simulates a real travel booking cycle.
-
-The project was bootstrapped using **Vite**, providing a fast and modern setup for React + TypeScript.
-
-The integrated AI assistant is called:
-
-```
-🤖 FrankStack AI Assistant
-```
-
-It can answer questions, guide the user, and interact with simulated booking systems.
-
-User session data (chat history, user name, API key) is stored in memory using **Zustand**, allowing persistent state across components during a session.
-
----
-
-## Ambitious Goal
-
-The challenging goal is to create an **AI travel agent** that:
-
-* Handles a complete booking using the **saga pattern**, with a choreography of API calls
-* Interacts with backend services on **AWS Cloud**
-* Covers all layers of the stack: React front-end, Spring Boot API, AI, orchestration
-
-### Our Mission:
-
-We want the AI to organize a travel experience like:
-
-> Organize and book a full travel experience for 2 people to Paris to visit the Eiffel Tower, duration 4 days, maximum budget 1500€, 3-star hotel, departing from Milan starting tomorrow, weather permitting, 1 suitcase, and airport-to-hotel shuttle/taxi included.
-
-The AI will analyze the request and return a structured JSON | YAML ready for API booking calls.
-
-> **Note:** the project is still in progress and not yet finished.
-
----
-
-## React Project Structure
-
-📁 **src/**
-
-* 📁 **components/** – all React components (Header, InputBar, MessageList, MessageBubble, DebugPanel, Button)
-* 📁 **hooks/** – custom hooks (`useWeather`, `useServerHealth`, `useAI`)
-* 📁 **pages/** – main pages (`Chat.tsx`, `Home.tsx`)
-* 📁 **store/** – **Zustand store** (`useAuthStore.ts`) for user session management
-* 📁 **types/** – shared TypeScript types (`chat.ts`)
-* 📁 **utils/** – utility functions (`contextBuilder.ts`, `datetime.ts`, `weatherCodes.ts`)
-* index.css – global styles
-* App.tsx – root React component
-* main.tsx – entry point
-
----
-
-## Pipeline Overview
-
-```text
-[React Front-End (Vite)] 
-      │
-      ▼
-[Zustand Store: user session, API key, chat state]
-      │
-      ▼
-[Spring Boot API / Node Server] <─┐
-      │                          │
-      ▼                          │
-[Ollama AI GPT-OSS 20B]           │
-      │                          │
-      ▼                          │
-[Saga Pattern / Choreography of API Calls] 
-      │
-      ▼
-[AWS Cloud Services / Orchestration]
-      │
-      ▼
-[User Receives Complete Travel Booking]
-```
-
-* Front-end sends requests via React UI
-* **Zustand store** keeps track of the user session and chat state
-* API handles communication with AI and cloud services
-* AI interprets user input and returns structured JSON | YAML
-* Saga pattern executes chained booking actions
-* AWS orchestrates services ensuring end-to-end flow
-
----
-
-## User Session Management with Zustand
-
-```text
-[User Input / Chat Component] 
-        │
-        ▼
-[Zustand Store: useAuthStore] 
-   ├─ currentUser: "Edoardo"
-   ├─ apiKey: "********"
-   ├─ chatMessages: [...]
-   └─ other session state
-        │
-        ▼
-[All React Components] 
-(Header, InputBar, MessageList, DebugPanel)
-        │
-        ▼
-[UI Updates in Real-Time]
-```
-
-* The **Zustand store** acts as a centralized memory for the session.
-* Components subscribe to store state and automatically re-render when relevant data changes.
-* Allows persistent user session across multiple UI components **without prop drilling**.
-* Similar concept to Redux, but lightweight and easier to use for small-to-medium fullstack projects.
-
----
-
-## Getting Started (3 Terminals)
-
-FrankStack covers **the full stack**: Front-end, Back-end, AI + Orchestration.
-To run correctly, **use three separate terminals**.
-
----
-
-### 1️⃣ Front-End (React / Vite)
-
-```bash
-cd ~/Java/FrankStack/frank-react-vite
-./start.sh  # installs dependencies and runs the front-end at http://localhost:5173
-```
-
-### 2️⃣ Back-End (Node / Spring Boot API)
-
-```bash
-cd ~/Java/FrankStack/frank-node-server
-npm install      # install all dependencies
-node server.js   # start the Node server
-```
-
-⚠️ Make sure Ollama is available before starting the server, otherwise AI calls will fail.
-
-### 3️⃣ DevOps / AI (Ollama + LocalStack)
-
-```bash
-cd ~/Java/FrankStack/frank-ops
-./startaws.sh     # start LocalStack
-./startollama.sh  # start Ollama container with models
-```
-
-> This terminal handles external services: Ollama for AI and LocalStack to simulate AWS.
-
----
-
-## Tech Stack
-
-* **Front-end:** React + TypeScript + TailwindCSS + **Vite**
-* **State management:** **Zustand** (user session)
-* **AI:** Ollama with GPT-OSS 20B
-* **Back-end:** Spring Boot API / Node server orchestrated on AWS
-* **DevOps:** cloud orchestration, end-to-end API call management
-* **Debug & Logs:** real-time debug panel
-
----
-
-## Contribution
-
-FrankStack is an end-to-end demo of **fullstack AI orchestration**.
-Every part of the stack is observable and editable, using **Scrum methodology**, showcasing modern development practices.
-
----
+*Last updated: November 3, 2025*

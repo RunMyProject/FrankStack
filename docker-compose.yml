@@ -47,6 +47,7 @@ services:
     # Load environment variables (model paths, ports, etc.)
     env_file:
       - .env
+      - .env.local
     # Mount local models directory to ensure persistence and reusability
     volumes:
       - ${HOST_MODELS_DIR}/models:${CONTAINER_MODELS_DIR}
@@ -81,6 +82,7 @@ services:
     # Use .env file for runtime configuration
     env_file:
       - .env
+      - .env.local
     # Connect to same AI network
     networks:
       - frankstack-ai-net
@@ -151,6 +153,7 @@ services:
       - "${S3_SERVER_PORT}:${S3_SERVER_PORT}"
     env_file:
       - .env
+      - .env.auto
     volumes:
       - ./frank-node-s3:/usr/src/app
       - /usr/src/app/node_modules

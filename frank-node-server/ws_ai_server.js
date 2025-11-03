@@ -44,7 +44,7 @@ app.use('/api/location', locationProxy);
 // 12-Factor Config via ENV (gestione iniziale variabili)
  // Defaults chosen to be sensible for local dev; override via ENV in production.
 const PORT = parseInt(process.env.NODE_PORT || process.env.PORT || '3000', 10);
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'gemma2:9b-instruct-q4_0';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL;
 const OPENAI_URL = process.env.OPENAI_URL || 'https://api.openai.com/v1/chat/completions';
 const TIMEOUT = parseInt(process.env.REQUEST_TIMEOUT_MS || process.env.TIMEOUT_MS || '120000', 10);
 const DEFAULT_PROVIDER = process.env.DEFAULT_PROVIDER || 'ollama';

@@ -7,6 +7,68 @@
 # Date: 03 November 2025
 # ==========================================================
 
+# Load environment variables
+
+./setup_auto_env.sh
+if [ $? -ne 0 ]; then
+    echo "Error: setup_auto_env.sh failed!"
+    exit 1
+fi
+
+# ================================================================
+# Check if .env.local file exists
+# ================================================================
+
+if [ ! -f ".env.local" ]; then
+    echo "❌ ERROR: .env.local file not found!"
+    echo "📁 Current directory: $(pwd)"
+    echo "📋 Available files:"
+    ls -la | grep -E "(.env|docker-compose)"
+    exit 1
+fi
+
+# ================================================================
+# Load environment variables with error handling
+# ================================================================
+
+echo "🔍 Loading variables from .env.local..."
+set -a
+if ! source .env.local; then
+    echo "❌ ERROR: Failed to load .env.local file"
+    exit 1
+fi
+set +a
+
+# ================================================================
+# Verify HOST_MODELS_DIR is set
+# ================================================================
+
+if [ -z "$HOST_MODELS_DIR" ]; then
+    echo "❌ ERROR: HOST_MODELS_DIR is not defined in .env.local"
+    echo "💡 Please ensure .env.local contains: HOST_MODELS_DIR=/your/path/here"
+    exit 1
+fi
+
+# ================================================================
+# Verify the directory actually exists
+# ================================================================
+
+if [ ! -d "$HOST_MODELS_DIR" ]; then
+    echo "❌ ERROR: Directory does not exist: $HOST_MODELS_DIR"
+    echo "💡 Please create the directory or update .env.local with correct path"
+    exit 1
+fi
+
+# ================================================================
+# Start Docker Compose
+# ================================================================
+
+echo "✅ All checks passed!"
+echo "📁 Models directory: $HOST_MODELS_DIR"
+echo "🐳 Starting Docker Compose..."
+
+# ==========================================================
+
 echo "Deployment of Frank Stack"
 echo "-------------------------------------------"
 

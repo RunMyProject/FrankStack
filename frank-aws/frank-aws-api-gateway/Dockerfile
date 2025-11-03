@@ -3,7 +3,7 @@
 # Frank-AWS-API-Gateway Microservice Container (cache-optimized)
 # 
 # Author: Edoardo Sabatini
-# Date: 27 October 2025
+# Date: 03 November 2025
 # ================================================================
 
 # STAGE 1: Build (Maven + JDK)
@@ -48,6 +48,9 @@ COPY deploy-lambda-docker.sh /app
 
 # Copy .env for deploy-lambda-docker.sh
 COPY .env /app
+
+# Copy .env.auto for deploy-lambda-docker.sh
+COPY .env.auto /app
 
 WORKDIR /app/tools
 
