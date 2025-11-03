@@ -7,11 +7,14 @@
 # variable-substitution pitfalls with Docker Compose.
 #
 # Author: Edoardo Sabatini
-# Date: 30 October 2025
+# Date: 03 November 2025
 # ================================================================
 
 version: '3.9'
 
+# ---------------------------------------------------------------
+# Named volume for CUDA runtime data (persistent GPU setup)
+# ---------------------------------------------------------------
 volumes:
   nvidia-data:
 
@@ -21,7 +24,7 @@ services:
   # AI CORE - ACTIVE SERVICE
   # ------------------------------------------------------------------------------------
   
-  # NOTES:
+  # NOTES (for GPU setup on host machine):
   # -------------------------------------------------------------------------------
   # sudo apt-get update
   # sudo apt-get install -y nvidia-container-toolkit
@@ -38,25 +41,28 @@ services:
   frankstack-ollama:
     image: ollama/ollama:latest
     container_name: frankstack-ollama
-    # Expose Ollama API port (from .env)
+    # Expose Ollama API port (defined in .env)
     ports:
       - "${OLLAMA_PORT}:${OLLAMA_PORT}"
-    # Environment variables from .env
+    # Load environment variables (model paths, ports, etc.)
     env_file:
       - .env
-    # Mount host models directory into container
+    # Mount local models directory to ensure persistence and reusability
     volumes:
       - ${HOST_MODELS_DIR}/models:${CONTAINER_MODELS_DIR}
+    # Connect to shared AI network
     networks:
       - frankstack-ai-net
+    # Restart automatically to ensure resilience
     restart: always
+    # Request GPU access using NVIDIA runtime
     deploy:
-          resources:
-            reservations:
-              devices:
-                - driver: nvidia
-                  count: all
-                  capabilities: [gpu]
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   # ------------------------------------------------------------------------------
   # 2. FrankStack Node.js Server (AI Logic / Proxy / BFF)
@@ -66,82 +72,108 @@ services:
       context: ./frank-node-server
       dockerfile: Dockerfile
     container_name: frankstack-node-server
-    # Dependencies: ensure Ollama container starts first
+    # Wait for Ollama before starting
     depends_on:
       - frankstack-ollama
-    # Port mapping from host to container
+    # Expose Node.js API port
     ports:
       - "${NODE_PORT}:${NODE_PORT}"
-    # Environment variables are loaded from .env
+    # Use .env file for runtime configuration
     env_file:
       - .env
-    # Networks used by this service
+    # Connect to same AI network
     networks:
       - frankstack-ai-net
     restart: unless-stopped
+    # Mount code for live development (hot reload) + keep node_modules local
     volumes:
       - ./frank-node-server:/usr/src/app
       - /usr/src/app/node_modules
 
-  # -------------------------
-  # 3. React Frontend (Vite)
-  # -------------------------
-  frankstack-react-vite:
-    build:
-      context: ./frank-react-vite
-      dockerfile: Dockerfile
-    container_name: frankstack-react-vite
-    ports:
-      - "80:80"
-    depends_on:
-      - frankstack-node-server
-    networks:
-      - frankstack-ai-net
-    restart: unless-stopped
-    env_file:
-      - .env
-    volumes:
-      - ./frank-react-vite:/usr/src/app
-      - /usr/src/app/node_modules
-
   # ------------------------------------------------------------------------------
-  # 4. FrankStack Node.js Stripe Server (Payment Token Handler)
+  # 3. FrankStack Node.js Stripe Server (Payment Token Handler)
   # ------------------------------------------------------------------------------
   frankstack-node-stripe:
     build:
       context: ./frank-node-stripe
       dockerfile: Dockerfile
     container_name: frankstack-node-stripe
+    # Ensure dependency order
     depends_on:
       - frankstack-node-server
+    # Map Stripe API port
     ports:
       - "${STRIPE_PORT}:${STRIPE_PORT}"
+    # Load environment variables
     env_file:
       - .env
+    # Mount source for dev + isolate node_modules
     volumes:
       - ./frank-node-stripe:/usr/src/app
       - /usr/src/app/node_modules
+    # Use same internal AI network
     networks:
       - frankstack-ai-net
+    # Restart automatically unless manually stopped
     restart: unless-stopped
 
+  # ------------------------------------------------------------------------------
+  # 4. FrankStack NVIDIA CUDA Runtime (GPU Access)
+  # ------------------------------------------------------------------------------
   frankstack-nvidia:
     image: nvidia/cuda:12.4.0-runtime-ubuntu22.04
+    # Explicitly use NVIDIA runtime for GPU acceleration
     runtime: nvidia
     deploy:
       resources:
         reservations:
           devices:
             - capabilities: [gpu]
+    # Shared CUDA data volume
     volumes:
       - nvidia-data:/usr/local/cuda
 
+  # ------------------------------------------------------------------------------
+  # 5. Backend - AWS S3 Download Proxy Server
+  # ------------------------------------------------------------------------------
+  # Lightweight Express proxy for local or cloud S3 access.
+  # Used to securely fetch and serve files (e.g. PDFs) inline to the browser.
+  # -------------------------------------------------------------------------------
+  frank-node-s3:
+    build:
+      context: ./frank-node-s3
+      dockerfile: Dockerfile
+    container_name: frank-node-s3
+    # Ensure dependency order
+    depends_on:
+      - frankstack-node-server
+    ports:
+      - "${S3_SERVER_PORT}:${S3_SERVER_PORT}"
+    env_file:
+      - .env
+    volumes:
+      - ./frank-node-s3:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - frankstack-ai-net
+    restart: unless-stopped
+    # Explicit command override (entry point)
+    command: ["node", "serverProxyS3.js"]
+    # Healthcheck ensures service stays responsive
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${S3_SERVER_PORT}/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 # ------------------------------------------------------------------------------------
 # NETWORK CONFIGURATION
 # ------------------------------------------------------------------------------------
 networks:
-  # FrankStack AI Network (Isolated for AI Services)
+  # FrankStack AI Network (Isolated for AI and supporting services)
   frankstack-ai-net:
     driver: bridge
+
+# ================================================================
 # End of docker-compose.yml
+# ================================================================

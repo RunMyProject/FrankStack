@@ -4,13 +4,20 @@
 # undeploy the Frank Stack on a Linux system
 #
 # Author: Edoardo Sabatini
-# Date: 28 October 2025
+# Date: 03 November 2025
 # ==========================================================
 
 echo "Undeployment of Frank Stack"
 echo "-------------------------------------------"
 
-echo "Stage 1: Node.js undeployment..."
+# ==========================================================
+
+echo "Stage 1: Frontend undeployment..."
+./undeployFrontEnd.sh
+
+# ==========================================================
+
+echo "Stage 2: Node.js undeployment..."
 docker-compose -f docker-compose.yml down
 if [ $? -eq 0 ]; then
     echo "Stage 1 undeployed successfully!"
@@ -21,7 +28,7 @@ fi
 
 # ==========================================================
 
-echo "Stage 2: Java undeployment..."
+echo "Stage 3: Java undeployment..."
 cd frank-spring || {
     echo "Error: directory frank-stack-spring not found!"
     exit 1
@@ -36,7 +43,7 @@ fi
 
 # ==========================================================
 
-echo "Stage 3: AWS undeployment..."
+echo "Stage 4: AWS undeployment..."
 cd ../frank-aws || {
     echo "Error: directory frank-stack-aws not found!"
     exit 1

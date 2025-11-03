@@ -1,0 +1,47 @@
+# ================================================================
+# docker-compose.front.yml
+# FrankStack - React/Vite Frontend + AWS S3 Proxy Backend
+#
+# Author: Edoardo Sabatini
+# Date: 03 November 2025
+# ================================================================
+
+version: '3.9'
+
+services:
+  # ================================================================
+  # Frontend - React/Vite (Nginx)
+  # ------------------------------------------------
+  # The frontend depends on the S3 proxy backend and uses
+  # it to display invoices or assets from LocalStack.
+  # ================================================================
+  frankstack-react-vite:
+    build:
+      context: ./frank-react-vite
+      dockerfile: Dockerfile
+    container_name: frankstack-react-vite
+    ports:
+      - "80:80"  # Expose port 80 for local testing or production
+    env_file:
+      - .env
+    volumes:
+      - ./frank-react-vite:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - frankstack-ai-net
+    restart: unless-stopped
+
+# ---------------------------------------------------------------
+# Network Configuration
+# ---------------------------------------------------------------
+networks:
+  # IMPORTANT:
+  # Must match backend network name so both containers can talk.
+  frankstack-ai-net:
+    external: true
+    name: frankstack_frankstack-ai-net
+    driver: bridge
+    
+# ================================================================
+# End of docker-compose.front.yml
+# ================================================================

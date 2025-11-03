@@ -3,7 +3,7 @@
 # frankstack-react-vite (Vite / React 18)
 # 
 # Author: Edoardo Sabatini
-# Date: 27 October 2025
+# Date: 03 November 2025
 # ================================================================
 
 # syntax=docker/dockerfile:1.4

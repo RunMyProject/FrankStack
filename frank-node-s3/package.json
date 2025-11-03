@@ -1,0 +1,21 @@
+{
+  "name": "frank-node-s3",
+  "version": "1.0.0",
+  "description": "Proxy server per servire PDF da S3/LocalStack come inline",
+  "main": "serverProxyS3.js",
+  "scripts": {
+    "start": "node serverProxyS3.js",
+    "dev": "nodemon serverProxyS3.js"
+  },
+  "keywords": ["s3", "proxy", "pdf", "localstack"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}

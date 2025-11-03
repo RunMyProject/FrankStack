@@ -4,7 +4,7 @@
 # deploy the Frank Stack on a Linux system
 #
 # Author: Edoardo Sabatini
-# Date: 28 October 2025
+# Date: 03 November 2025
 # ==========================================================
 
 echo "Deployment of Frank Stack"
@@ -50,4 +50,13 @@ else
 fi
 
 echo "Deployment script finished."
+
+# ==========================================================
+
+echo "Stage 4: Frontend deployment..."
+cd .. || {
+    echo "Error: directory frank-stack not found!"
+    exit 1
+}
+./deployFrontEnd.sh
 # End of deployFrankStack.sh
